@@ -195,7 +195,7 @@ var generateJSON = function (asonTokens) {
             break;
         case 'v':
             comma();
-            if (isNaN(token.body)) {
+            if (isNaN(token.body) || token.body === "") {
                 output += '"' + token.body + '"';
             } else {
                 output += token.body;
