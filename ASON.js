@@ -1,14 +1,36 @@
 /*jshint node: true*/
 /*jslint node: true*/
 "use strict";
+
+/**
+Splits a string at newLine characters and
+returns an array of lines
+**/
 var getLines = function (text) {
     return text.split("\n");
 };
 
+/**
+Counts the space characters in front of a string
+**/
 var getLevel = function (line) {
     return line.match(/^\ */)[0].length;
 };
 
+/**
+Analyses a string and creates tokens. Possible types:
+- rs (right shift)
+- ls (left shift)
+- c (content)
+A token is an object with at least an attribute type. 
+It stores the type as a string (rs, ls or c).
+The token can have a body attribute with additional information:
+- ls tokens store the number of levels to decrease
+- c tokens store the value of the content
+The tokens describe the level of values or in other words:
+The hierarchical structure of data.
+This method returns an array of tokens of type rs, ls or c.
+**/
 var shiftTokenizer = function (text) {
     var lines = getLines(text);
     var tokensRaw = [];
@@ -47,6 +69,28 @@ var shiftTokenizer = function (text) {
     return tokensRaw;
 };
 
+/**
+This method takes the output of the method shiftTokenizer as
+an argument and analyses it further to create more specialized tokens.
+There are two different contexts: m (map) and s (sequence).
+Start context is m. After a c token (it's a line), a rs token can introduce
+a new context that is pushed into a stack. A ls token pops contexts
+off a stack. Depending on the context, c tokens are interpreted differently.
+If one condition is met, the others are ignored.
+Map-Context:
+- A line that starts with character . and is followed by rs 
+  creates sk (sequence key) token. Push sequence context into stack.
+- ske is created when the line starting with . character is not followed by rs.
+  It depicts an empty sequence.
+- A line followed by rs creates mk (map key) token. Push map context into stack.
+- If there is a space character in the line,
+  split at first space and create  k (key) and v (value) tokens
+- Otherwise, create mke (map key element) token, depicting an empty map.
+Sequence-Context:
+- A line starts with a . character. Create s (sequence) token.
+- line is followed by rs. Create am (anonymous map) token. Push map context into stack.
+- Otherwise, create v (value) token, depicting an element of the sequence.
+**/
 var asonTokenizer = function (shiftTokens) {
     var tokens = [];
     var contexts = ['m'];
@@ -159,6 +203,9 @@ var asonTokenizer = function (shiftTokens) {
     return tokens;
 };
 
+/**
+Interprets ason tokens and generates JSON.
+**/
 var generateJSON = function (asonTokens) {
     var output = "{";
     var contexts = ['m'];
