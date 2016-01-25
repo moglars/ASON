@@ -110,12 +110,13 @@ var asonTokenizer = function (shiftTokens) {
         locToken = shiftTokens[i];
         if (locToken.type === 'c') {
             content = locToken.body;
+            if(content[content.length-1] === " ") throw "no whitespace at the end of the line allowed";
             if (context === 'm') {
                 firstChar = content[0];
                 if (firstChar === '.') {
                     lookAheadToken = shiftTokens[i + 1];
                     key = content.substr(1);
-                    //if(key === "") throw "sequence key must not be empty"
+                    if(key === "") throw "sequence key must not be empty";
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
                         tokens.push({
                             type: 'sk',
@@ -125,15 +126,16 @@ var asonTokenizer = function (shiftTokens) {
                         i += 1;
                         tokens.push(lookAheadToken);
                     } else {
-                        tokens.push({
+                        throw "sequence must not be empty";
+                       /*  tokens.push({
                             type: 'ske',
                             body: key
-                        });
+                        }); */
                     }
                 } else {
                     lookAheadToken = shiftTokens[i + 1];
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
-                        //if(content == "") throw "map key must not be empty"
+                        if(content == "") throw "map key must not be empty";
                         tokens.push({
                             type: 'mk',
                             body: content
@@ -146,7 +148,8 @@ var asonTokenizer = function (shiftTokens) {
                         if (firstSpacePosition !== -1) {
                             key = content.substring(0, firstSpacePosition);
                             value = content.substr(firstSpacePosition + 1);
-                            //if(key === "") throw "value key must not be empty"
+                            if(key === "") throw "value key must not be empty";
+                            if(value === "") throw "value must not be empty";
                             tokens.push({
                                 type: 'k',
                                 body: key
@@ -156,11 +159,12 @@ var asonTokenizer = function (shiftTokens) {
                                 body: value
                             });
                         } else {
-                            //if(content === "") throw "map key must not be empty"
-                            tokens.push({
+                            throw "key and value expected";
+                            // if(content === "") throw "map key must not be empty"
+                            /* tokens.push({
                                 type: 'mke',
                                 body: content
-                            });
+                            }); */
                         }
                     }
                 }
@@ -176,7 +180,7 @@ var asonTokenizer = function (shiftTokens) {
                 } else {
                     lookAheadToken = shiftTokens[i + 1];
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
-                        //if(content === "") throw "key for anonymous map is not allowed";
+                        if(content !== "-") throw "anonymous map must be introduced with a '-' character";
                         tokens.push({
                             type: 'am'
                         });
