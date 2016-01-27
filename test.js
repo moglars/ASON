@@ -39,8 +39,10 @@ function runTest(d) {
     }
 
     console.log(log);
-    console.log("");
-    console.log("");
+    if(process.argv[2] === "-v") {
+        console.log("");
+        console.log("");
+    }
     count++;
 }
 
