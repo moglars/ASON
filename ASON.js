@@ -93,7 +93,7 @@ Sequence-Context:
 **/
 var asonTokenizer = function (shiftTokens) {
     var tokens = [];
-    var contexts = ['m'];
+    var contexts = ['s'];
 
     var i;
     var context;
@@ -110,7 +110,8 @@ var asonTokenizer = function (shiftTokens) {
         locToken = shiftTokens[i];
         if (locToken.type === 'c') {
             content = locToken.body;
-            if(content[content.length-1] === " ") throw "no whitespace at the end of the line allowed";
+            if(content[content.length-1] === " " ) throw "no whitespace at the end of the line allowed";
+			else if(content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
             if (context === 'm') {
                 firstChar = content[0];
                 if (firstChar === '.') {
@@ -211,8 +212,13 @@ var asonTokenizer = function (shiftTokens) {
 Interprets ason tokens and generates JSON.
 **/
 var generateJSON = function (asonTokens) {
-    var output = "{";
-    var contexts = ['m'];
+    var contexts = ['s'];
+    var output;
+    if(contexts[contexts.length-1] === 'm') {
+        output = "{";
+    } else if (contexts[contexts.length-1] === 's') {
+        output = "[";
+    }
     var lastToken;
     var comma = function () {
         switch (lastToken.type) {
