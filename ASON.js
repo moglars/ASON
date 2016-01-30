@@ -212,13 +212,14 @@ var asonTokenizer = function (shiftTokens) {
 Interprets ason tokens and generates JSON.
 **/
 var generateJSON = function (asonTokens) {
+    var countMapOrValueElements = 0; //json compatibility. remove sequence if only one map or one value in root sequence and no other sequence element
+    var countSequenceElements = 0;
+    
     var contexts = ['s'];
     var output;
-    if(contexts[contexts.length-1] === 'm') {
-        output = "{";
-    } else if (contexts[contexts.length-1] === 's') {
-        output = "[";
-    }
+
+    output = "[";
+
     var lastToken;
     var comma = function () {
         switch (lastToken.type) {
@@ -251,6 +252,7 @@ var generateJSON = function (asonTokens) {
             }
             break;
         case 'v':
+            if(contexts.length === 1) countMapOrValueElements ++;
             comma();
             if (isNaN(token.body) || token.body === "") {
                 output += '"' + token.body + '"';
@@ -259,11 +261,13 @@ var generateJSON = function (asonTokens) {
             }
             break;
         case 'am':
+            if(contexts.length === 1) countMapOrValueElements ++;
             comma();
             output += '{';
             contexts.push('m');
             break;
         case 's':
+            if(contexts.length === 1) countSequenceElements ++;
             comma();
             output += '[';
             contexts.push('s');
@@ -303,6 +307,7 @@ var generateJSON = function (asonTokens) {
         }
         contexts.pop();
     }
+    if(countMapOrValueElements === 1 && countSequenceElements === 0) output = output.slice(1,output.length-1);
     return output;
 };
 
@@ -312,6 +317,77 @@ var asonToJson = function (ason) {
     return generateJSON(asonTokens);
 };
 
+var levelToSpace = function(level) {
+    var space = "";
+    for(var i = 0; i < level;i++) {
+        space += " ";
+    }
+    return space;
+};
+
+var objToAson = function(o, level) {
+    var output = "";
+    var hasKeys = false;
+    for(var key in o) {
+        if(o.hasOwnProperty(key)){
+            hasKeys = true;
+            output += levelToSpace(level);
+            
+            //This makes ASON not 100% compatible with JSON:
+            var keyC = key.replace(" ","_");
+            
+            var value = o[key];
+            if(Array.isArray(value)) {
+                output += "." + keyC + "\n" + arrayToAson(value, level + 1);
+            } else if(value === Object(value)) { //warn: array is also an object
+                output += keyC + "\n" + objToAson(value, level + 1);
+            } else {
+                output += keyC + " " + value + "\n";
+            }
+        }
+    }
+    // if(!hasKeys) output
+    //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
+    return output;
+};
+
+var arrayToAson = function(arr, level) {
+    var output = "";
+    for(var i = 0;i< arr.length;i++) {
+        output += levelToSpace(level);
+        var el = arr[i];
+        if(Array.isArray(el)){
+            output += ".\n";          
+            output += arrayToAson(el, level + 1);
+        } else if(el === Object(el)) {
+            output += "-\n";
+            output += objToAson(el, level + 1);
+        } else {
+            output += el + "\n";
+        }
+    }
+    //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
+    return output;
+};
+
+var jsonToAson = function(json) {
+    var o = JSON.parse(json);
+    var output = "";
+    var level = 0;
+    if(Array.isArray(o)){  
+        // output += ".\n";
+        // output += arrayToAson(o, level + 1);
+        output += arrayToAson(o, level);
+    } else if(o === Object(o)) {
+        output += "-\n";
+        output += objToAson(o, level + 1);
+    } else {
+        output += o;
+    }
+    if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
+    return output;
+};
+
 
 exports.asonToJson = asonToJson;
 exports.getLines = getLines;
@@ -319,3 +395,4 @@ exports.getLevel = getLevel;
 exports.shiftTokenizer = shiftTokenizer;
 exports.asonTokenizer = asonTokenizer;
 exports.generateJSON = generateJSON;
+exports.jsonToAson = jsonToAson;
