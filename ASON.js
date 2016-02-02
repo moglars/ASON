@@ -211,7 +211,7 @@ var asonTokenizer = function (shiftTokens) {
 /**
 Interprets ason tokens and generates JSON.
 **/
-var generateJSON = function (asonTokens) {
+var generateJSON = function (asonTokens,prettyPrint) {
     var countMapOrValueElements = 0; //json compatibility. remove sequence if only one map or one value in root sequence and no other sequence element
     var countSequenceElements = 0;
     
@@ -228,6 +228,7 @@ var generateJSON = function (asonTokens) {
         case 'mke':
         case 'ls':
             output += ',';
+            if(prettyPrint) output+='\n';
             break;
         }
     };
@@ -254,6 +255,7 @@ var generateJSON = function (asonTokens) {
         case 'v':
             if(contexts.length === 1) countMapOrValueElements ++;
             comma();
+            if(prettyPrint && lastToken.type !== 'k') output+=levelToSpace(contexts.length-1);
             if (isNaN(token.body) || token.body === "") {
                 output += '"' + token.body + '"';
             } else {
@@ -263,32 +265,42 @@ var generateJSON = function (asonTokens) {
         case 'am':
             if(contexts.length === 1) countMapOrValueElements ++;
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '{';
+            if(prettyPrint) output+='\n';
             contexts.push('m');
             break;
         case 's':
             if(contexts.length === 1) countSequenceElements ++;
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);   
             output += '[';
+            if(prettyPrint) output+='\n';
             contexts.push('s');
             break;
         case 'k':
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + token.body + '":';
             break;
         case 'mk':
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + token.body + '":{';
             contexts.push('m');
+            if(prettyPrint) output+='\n';
             break;
         case 'mke':
             comma();
             output += '"' + token.body + '":{}';
+            if(prettyPrint) output+='\n';
             break;
         case 'sk':
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + token.body + '":[';
             contexts.push('s');
+            if(prettyPrint) output+='\n';
             break;
         case 'ske':
             comma();
@@ -311,10 +323,10 @@ var generateJSON = function (asonTokens) {
     return output;
 };
 
-var asonToJson = function (ason) {
+var asonToJson = function (ason,prettyPrint) {
     var shiftTokens = shiftTokenizer(ason);
     var asonTokens = asonTokenizer(shiftTokens);
-    return generateJSON(asonTokens);
+    return generateJSON(asonTokens,prettyPrint);
 };
 
 var levelToSpace = function(level) {
