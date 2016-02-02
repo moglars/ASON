@@ -42,7 +42,7 @@ var shiftTokenizer = function (text) {
     var leftShiftCount;
     for (i = 0; i < lines.length; i += 1) {
         line = lines[i];
-        if (line !== "") {
+        if (line.trim() !== "") {
             newLevel = getLevel(line);
             if (newLevel > level) {
                 tokensRaw.push({
@@ -64,6 +64,8 @@ var shiftTokenizer = function (text) {
                 body: line
             });
             level = newLevel;
+        } else {
+            throw "line must not be empty";
         }
     }
     return tokensRaw;
@@ -118,6 +120,7 @@ var asonTokenizer = function (shiftTokens) {
                     lookAheadToken = shiftTokens[i + 1];
                     key = content.substr(1);
                     if(key === "") throw "sequence key must not be empty";
+                    if(key.indexOf(" ") != -1) throw "sequence key must not contain spaces";
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
                         tokens.push({
                             type: 'sk',

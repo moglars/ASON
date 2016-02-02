@@ -1,0 +1,56 @@
+<! DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>asonTrainer</title>
+</head>
+<body>
+<div id="message" style="min-height:20px"></div>
+<textarea rows="30" cols="50" id="ason"></textarea>
+<textarea rows="30" cols="50" id="json"></textarea>
+
+</body>
+<script type="text/javascript" >var exports = {};</script>
+<script type="text/javascript" src="ASON/ASON.js" ></script>
+<script type="text/javascript" >var ason = exports;exports = {};</script>
+
+<script type="text/javascript">
+var waiter;
+
+var textNode = document.createTextNode('');
+document.getElementById('message').appendChild(textNode);
+
+var convert = function() {
+    try {
+        var json = ason.asonToJson(document.getElementById('ason').value,true);
+        document.getElementById('json').value = json;
+        textNode.textContent = '';
+        document.getElementById('ason').style.backgroundColor = "rgb(227, 227, 254)";
+    } catch(e) {
+        textNode.textContent = e;
+        document.getElementById('ason').style.backgroundColor = "rgb(255, 233, 233)";
+    }
+    
+}
+document.onkeydown = function(event) {
+    clearTimeout(waiter);
+    waiter = null;
+    if(event.keyCode === 13) {
+        var asonTextArea = document.getElementById('ason');
+        var text = asonTextArea.value;
+        var indent = text.slice(text.lastIndexOf("\n",asonTextArea.selectionStart-1)+1).match(/^\ */)[0];
+        var before = text.slice(0,asonTextArea.selectionStart);
+        var after = text.slice(asonTextArea.selectionStart);
+        document.getElementById('ason').value = before + "\n" + indent + after;
+        asonTextArea.selectionStart = asonTextArea.selectionEnd = before.length + 1 + indent.length;
+        convert();
+        return false;
+    } else {
+        waiter = setTimeout(function() {
+            convert();
+        },200);
+    }
+    
+};
+</script>
+</html>
