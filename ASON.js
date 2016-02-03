@@ -173,30 +173,28 @@ var asonTokenizer = function (shiftTokens) {
                     }
                 }
             } else if (context === 's') {
-                firstChar = content[0];
-                if (firstChar === '.') {
-                    key = content.substr(1);
-                    tokens.push({
-                        type: 's',
-                        body: key
-                    });
-                    contexts.push('s');
-                } else {
-                    lookAheadToken = shiftTokens[i + 1];
-                    if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
-                        if(content !== "-") throw "anonymous map must be introduced with a '-' character";
+                lookAheadToken = shiftTokens[i + 1];
+                if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
+                    if(content === '.') {
+                        tokens.push({
+                            type: 's'
+                        });
+                        contexts.push('s');
+                    } else if (content === '-') {
                         tokens.push({
                             type: 'am'
                         });
                         contexts.push('m');
-                        i += 1;
-                        tokens.push(lookAheadToken);
                     } else {
-                        tokens.push({
-                            type: 'v',
-                            body: content
-                        });
+                        throw "in a sequence, indentation is introduced by a - or . character on previous line";
                     }
+                    i += 1;
+                    tokens.push(lookAheadToken);
+                } else {
+                    tokens.push({
+                        type: 'v',
+                        body: content
+                    });
                 }
             }
         } else if (locToken.type === 'ls') {
