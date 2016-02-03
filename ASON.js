@@ -140,6 +140,7 @@ var asonTokenizer = function (shiftTokens) {
                     lookAheadToken = shiftTokens[i + 1];
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
                         if(content == "") throw "map key must not be empty";
+                        if(content.indexOf(" ") != -1) throw "map key must not contain spaces";
                         tokens.push({
                             type: 'mk',
                             body: content
