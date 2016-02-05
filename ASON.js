@@ -31,7 +31,7 @@ The tokens describe the level of values or in other words:
 The hierarchical structure of data.
 This method returns an array of tokens of type rs, ls or c.
 **/
-var shiftTokenizer = function (text) {
+var shiftTokenizer = function (text,strict) {
     var lines = getLines(text);
     var tokensRaw = [];
     var level = -1;
@@ -42,31 +42,28 @@ var shiftTokenizer = function (text) {
     var leftShiftCount;
     for (i = 0; i < lines.length; i += 1) {
         line = lines[i];
-        if (line.trim() !== "") {
-            newLevel = getLevel(line);
-            if (newLevel > level) {
-                tokensRaw.push({
-                    type: 'rs'
-                });
-                line = line.substr(level + 1);
-            } else if (newLevel < level) {
-                leftShiftCount = level - newLevel;
-                tokensRaw.push({
-                    type: 'ls',
-                    body: leftShiftCount
-                });
-                line = line.substr(newLevel);
-            } else {
-                line = line.substr(newLevel);
-            }
+        if(strict && line.trim() === "") throw "line must not be empty";
+        newLevel = getLevel(line);
+        if (newLevel > level) {
             tokensRaw.push({
-                type: 'c',
-                body: line
+                type: 'rs'
             });
-            level = newLevel;
+            line = line.substr(level + 1);
+        } else if (newLevel < level) {
+            leftShiftCount = level - newLevel;
+            tokensRaw.push({
+                type: 'ls',
+                body: leftShiftCount
+            });
+            line = line.substr(newLevel);
         } else {
-            throw "line must not be empty";
+            line = line.substr(newLevel);
         }
+        tokensRaw.push({
+            type: 'c',
+            body: line
+        });
+        level = newLevel;
     }
     return tokensRaw;
 };
@@ -93,7 +90,7 @@ Sequence-Context:
 - line is followed by rs. Create am (anonymous map) token. Push map context into stack.
 - Otherwise, create v (value) token, depicting an element of the sequence.
 **/
-var asonTokenizer = function (shiftTokens) {
+var asonTokenizer = function (shiftTokens, strict) {
     var tokens = [];
     var contexts = ['s'];
 
@@ -112,13 +109,13 @@ var asonTokenizer = function (shiftTokens) {
         locToken = shiftTokens[i];
         if (locToken.type === 'c') {
             content = locToken.body;
-            if(content[content.length-1] === " " ) throw "no whitespace at the end of the line allowed";
-			else if(content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
+            if(strict && content[content.length-1] === " " ) throw "no whitespace at the end of the line allowed";
+			else if(strict && content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
             if (context === 'm') {
                 lookAheadToken = shiftTokens[i + 1];
                 if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
-                    if(content === "") throw "previous line: map key must not be empty";
-                    if(content.indexOf(" ") !== -1) throw "previous line: map key must not contain spaces";
+                    if(strict && content === "") throw "previous line: map key must not be empty";
+                    if(strict && content.indexOf(" ") !== -1) throw "previous line: map key must not contain spaces";
                     if (content[0] === '.') {
                         key = content.substr(1);
                         tokens.push({
@@ -137,11 +134,11 @@ var asonTokenizer = function (shiftTokens) {
                     tokens.push(lookAheadToken);
                 } else {
                     firstSpacePosition = content.indexOf(" ");
-                    if(firstSpacePosition === -1) throw "expected key and value separated by space or indentation on next line";
+                    if(strict && firstSpacePosition === -1) throw "expected key and value separated by space or indentation on next line";
                     key = content.substring(0, firstSpacePosition);
                     value = content.substr(firstSpacePosition + 1);
-                    if(key === "") throw "value key must not be empty";
-                    if(value === "") throw "value must not be empty";
+                    if(strict && key === "") throw "value key must not be empty";
+                    if(strict && value === "") throw "value must not be empty";
                     tokens.push({
                         type: 'k',
                         body: key
@@ -159,13 +156,12 @@ var asonTokenizer = function (shiftTokens) {
                             type: 's'
                         });
                         contexts.push('s');
-                    } else if (content === '-') {
+                    } else {
+                        if(strict && content !== '-') throw "in a sequence, indentation is introduced by a - or . character on previous line";
                         tokens.push({
                             type: 'am'
                         });
                         contexts.push('m');
-                    } else {
-                        throw "in a sequence, indentation is introduced by a - or . character on previous line";
                     }
                     i += 1;
                     tokens.push(lookAheadToken);
@@ -304,8 +300,8 @@ var generateJSON = function (asonTokens,prettyPrint) {
 };
 
 var asonToJson = function (ason,prettyPrint) {
-    var shiftTokens = shiftTokenizer(ason);
-    var asonTokens = asonTokenizer(shiftTokens);
+    var shiftTokens = shiftTokenizer(ason,false);
+    var asonTokens = asonTokenizer(shiftTokens,false);
     return generateJSON(asonTokens,prettyPrint);
 };
 
