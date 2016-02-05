@@ -22,7 +22,7 @@ Analyses a string and creates tokens. Possible types:
 - rs (right shift)
 - ls (left shift)
 - c (content)
-A token is an object with at least an attribute type. 
+A token is an object with at least an attribute type.
 It stores the type as a string (rs, ls or c).
 The token can have a body attribute with additional information:
 - ls tokens store the number of levels to decrease
@@ -77,7 +77,7 @@ a new context that is pushed into a stack. A ls token pops contexts
 off a stack. Depending on the context, c tokens are interpreted differently.
 If one condition is met, the others are ignored.
 Map-Context:
-- A line that starts with character . and is followed by rs 
+- A line that starts with character . and is followed by rs
   creates sk (sequence key) token. Push sequence context into stack.
 - ske is created when the line starting with . character is not followed by rs.
   It depicts an empty sequence.
@@ -190,7 +190,7 @@ Interprets ason tokens and generates JSON.
 var generateJSON = function (asonTokens,prettyPrint) {
     var countMapOrValueElements = 0; //json compatibility. remove sequence if only one map or one value in root sequence and no other sequence element
     var countSequenceElements = 0;
-    
+
     var contexts = ['s'];
     var output;
 
@@ -249,7 +249,7 @@ var generateJSON = function (asonTokens,prettyPrint) {
         case 's':
             if(contexts.length === 1) countSequenceElements ++;
             comma();
-            if(prettyPrint) output+=levelToSpace(contexts.length-1);   
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '[';
             if(prettyPrint) output+='\n';
             contexts.push('s');
@@ -320,10 +320,10 @@ var objToAson = function(o, level) {
         if(o.hasOwnProperty(key)){
             hasKeys = true;
             output += levelToSpace(level);
-            
+
             //This makes ASON not 100% compatible with JSON:
             var keyC = key.replace(" ","_");
-            
+
             var value = o[key];
             if(Array.isArray(value)) {
                 output += "." + keyC + "\n" + arrayToAson(value, level + 1);
@@ -345,7 +345,7 @@ var arrayToAson = function(arr, level) {
         output += levelToSpace(level);
         var el = arr[i];
         if(Array.isArray(el)){
-            output += ".\n";          
+            output += ".\n";
             output += arrayToAson(el, level + 1);
         } else if(el === Object(el)) {
             output += "-\n";
@@ -362,7 +362,7 @@ var jsonToAson = function(json) {
     var o = JSON.parse(json);
     var output = "";
     var level = 0;
-    if(Array.isArray(o)){  
+    if(Array.isArray(o)){
         // output += ".\n";
         // output += arrayToAson(o, level + 1);
         output += arrayToAson(o, level);
