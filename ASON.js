@@ -115,63 +115,41 @@ var asonTokenizer = function (shiftTokens) {
             if(content[content.length-1] === " " ) throw "no whitespace at the end of the line allowed";
 			else if(content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
             if (context === 'm') {
-                firstChar = content[0];
-                if (firstChar === '.') {
-                    lookAheadToken = shiftTokens[i + 1];
-                    key = content.substr(1);
-                    if(key === "") throw "sequence key must not be empty";
-                    if(key.indexOf(" ") != -1) throw "sequence key must not contain spaces";
-                    if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
+                lookAheadToken = shiftTokens[i + 1];
+                if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
+                    if(content === "") throw "previous line: map key must not be empty";
+                    if(content.indexOf(" ") !== -1) throw "previous line: map key must not contain spaces";
+                    if (content[0] === '.') {
+                        key = content.substr(1);
                         tokens.push({
                             type: 'sk',
                             body: key
                         });
                         contexts.push('s');
-                        i += 1;
-                        tokens.push(lookAheadToken);
                     } else {
-                        throw "sequence must not be empty";
-                       /*  tokens.push({
-                            type: 'ske',
-                            body: key
-                        }); */
-                    }
-                } else {
-                    lookAheadToken = shiftTokens[i + 1];
-                    if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
-                        if(content == "") throw "map key must not be empty";
-                        if(content.indexOf(" ") != -1) throw "map key must not contain spaces";
                         tokens.push({
                             type: 'mk',
                             body: content
                         });
                         contexts.push('m');
-                        i += 1;
-                        tokens.push(lookAheadToken);
-                    } else {
-                        firstSpacePosition = content.indexOf(" ");
-                        if (firstSpacePosition !== -1) {
-                            key = content.substring(0, firstSpacePosition);
-                            value = content.substr(firstSpacePosition + 1);
-                            if(key === "") throw "value key must not be empty";
-                            if(value === "") throw "value must not be empty";
-                            tokens.push({
-                                type: 'k',
-                                body: key
-                            });
-                            tokens.push({
-                                type: 'v',
-                                body: value
-                            });
-                        } else {
-                            throw "key and value expected";
-                            // if(content === "") throw "map key must not be empty"
-                            /* tokens.push({
-                                type: 'mke',
-                                body: content
-                            }); */
-                        }
                     }
+                    i += 1;
+                    tokens.push(lookAheadToken);
+                } else {
+                    firstSpacePosition = content.indexOf(" ");
+                    if(firstSpacePosition === -1) throw "expected key and value separated by space or indentation on next line";
+                    key = content.substring(0, firstSpacePosition);
+                    value = content.substr(firstSpacePosition + 1);
+                    if(key === "") throw "value key must not be empty";
+                    if(value === "") throw "value must not be empty";
+                    tokens.push({
+                        type: 'k',
+                        body: key
+                    });
+                    tokens.push({
+                        type: 'v',
+                        body: value
+                    });
                 }
             } else if (context === 's') {
                 lookAheadToken = shiftTokens[i + 1];
