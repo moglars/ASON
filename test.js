@@ -27,6 +27,8 @@ testData = [
     ['map in map in map pp','-\n key\n  key\n   key value','{\n "key":{\n  "key":{\n   "key":"value"}}}',true],
     ['mix','-\n key1 value1\n .sequence1\n  el1\n  el2\n key2 value2\n map2\n  key3 value3\n  .sequence2\n   el3\n   el4\n  key4 value4','{"key1":"value1","sequence1":["el1","el2"],"key2":"value2","map2":{"key3":"value3","sequence2":["el3","el4"],"key4":"value4"}}'],
     ['mix pp','-\n key1 value1\n .sequence1\n  el1\n  el2\n key2 value2\n map2\n  key3 value3\n  .sequence2\n   el3\n   el4\n  key4 value4','{\n "key1":"value1",\n "sequence1":[\n  "el1",\n  "el2"],\n "key2":"value2",\n "map2":{\n  "key3":"value3",\n  "sequence2":[\n   "el3",\n   "el4"],\n  "key4":"value4"}}',true],
+    ['escaped spaces for keys','-\n this\\ is\\ a\\ key this is the value','{"this is a key":"this is the value"}'],
+    ['no need for escaped spaces in sequence keys','-\n .this is a key\n  this is the value','{"this is a key":["this is the value"]}'],
 ];
 
 var firstArg = process.argv[2];
@@ -71,24 +73,24 @@ function runTest(d,fn) {
     }
 
     
-    count++;
+    
     return success;
 }
 
 var countSuccess = 0;
 var runBothWays = function(td) {
-    if(runTest(td,ason.asonToJson)) countSuccess++;
-    if(runTest([td[0],td[2],td[1]],ason.jsonToAson)) countSuccess++;
+    if(runTest(td,ason.asonToJson) && runTest([td[0],td[2],td[1]],ason.jsonToAson)) countSuccess++;
+    count++;
 };
 
 if(process.argv[3] != undefined) {
     var testIndex = process.argv[3];
     runBothWays(testData[testIndex]);
-    console.log(countSuccess + " of " + 2 + " succeeded")
+    console.log(countSuccess ? "OK" : "NOK");
 } else {
     testData.forEach(function(td) {
         runBothWays(td);
     });
-    console.log(countSuccess + " of " + testData.length*2 + " succeeded")
+    console.log(countSuccess + " of " + testData.length + " succeeded");
 }
 

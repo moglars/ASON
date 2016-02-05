@@ -68,6 +68,13 @@ var shiftTokenizer = function (text,strict) {
     return tokensRaw;
 };
 
+var indexOfFirstUnescapedSpace = function(text) {
+    return text.replace(/\\ /g,"__").indexOf(" ");
+}
+
+var unescapeSpace = function(text) {
+    return text.replace(/\\ /g," ");
+}
 /**
 This method takes the output of the method shiftTokenizer as
 an argument and analyses it further to create more specialized tokens.
@@ -133,9 +140,11 @@ var asonTokenizer = function (shiftTokens, strict) {
                     i += 1;
                     tokens.push(lookAheadToken);
                 } else {
-                    firstSpacePosition = content.indexOf(" ");
-                    if(strict && firstSpacePosition === -1) throw "expected key and value separated by space or indentation on next line";
+                    //ignore escaped spaces
+                    firstSpacePosition = indexOfFirstUnescapedSpace(content);
+                    if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
                     key = content.substring(0, firstSpacePosition);
+                    key = unescapeSpace(key);
                     value = content.substr(firstSpacePosition + 1);
                     if(strict && key === "") throw "value key must not be empty";
                     if(strict && value === "") throw "value must not be empty";
@@ -321,16 +330,14 @@ var objToAson = function(o, level) {
             hasKeys = true;
             output += levelToSpace(level);
 
-            //This makes ASON not 100% compatible with JSON:
-            var keyC = key.replace(" ","_");
-
             var value = o[key];
             if(Array.isArray(value)) {
-                output += "." + keyC + "\n" + arrayToAson(value, level + 1);
+                output += "." + key + "\n" + arrayToAson(value, level + 1);
             } else if(value === Object(value)) { //warn: array is also an object
-                output += keyC + "\n" + objToAson(value, level + 1);
+                output += key + "\n" + objToAson(value, level + 1);
             } else {
-                output += keyC + " " + value + "\n";
+                //Use escaping. Turn spaces in keys into \<space>
+                output += key.replace(/ /g,"\\ ") + " " + value + "\n";
             }
         }
     }
