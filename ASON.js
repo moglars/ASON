@@ -70,11 +70,63 @@ var shiftTokenizer = function (text,strict) {
 
 var indexOfFirstUnescapedSpace = function(text) {
     return text.replace(/\\ /g,"__").indexOf(" ");
-}
+};
 
 var unescapeSpace = function(text) {
     return text.replace(/\\ /g," ");
+};
+
+/**
+To write a line feed in a ason key or value,
+write the escape sequence \n.
+This method converts the escape sequence back 
+to a line feed character.
+*/
+var unescapeLineFeed = function(text) {
+    return text.replace("\\n","\n"); 
 }
+
+/**
+As of ecma-404 specification of JSON, the quotation mark (U+0022),
+the reverse solidus (U+005C) and the control characters U+0000 to 
+U+001F must be escaped.
+See following list for used two-character escape sequences:
+\" quotation mark 
+\\ reverse solidus
+\b backspace
+\f form feed
+\n line feed
+\r carriage return
+\t character tabulation
+The other control characters are escaped with \u<code point> where <code point>
+is a hexadecimal representation of the code point.
+*/
+var escapeSpecialJsonChars = function(text) {
+    text = text.replace(/\\/g,"\\\\"); //replaces \ with two of them
+    text = text.replace(/"/g,"\\\""); //replaces " with \"
+    text = text.replace(/[\b]/g,"\\b"); //replaces backspace with \b
+    text = text.replace(/[\f]/g,"\\f"); //replaces backspace with \f
+    
+    text = text.replace(/[\n]/g,"\\n"); //replaces backspace with \n
+    
+    text = text.replace(/[\r]/g,"\\r"); //replaces backspace with \r
+    text = text.replace(/[\t]/g,"\\t"); //replaces backspace with \t
+    
+    //replaces the control characters with escape sequence
+    return text.replace(/[\u0000-\u0007\u000B\u000E-\u001F]/g,function(match) {
+        var codePoint = match.codePointAt(0);
+        var hex = ("0000"+codePoint.toString(16)).slice(-4);
+        return "\\u" + hex;
+    });
+};
+
+/**
+Escapes line feed characters coming from json to \n in ason
+*/
+var escapeSpecialAsonChars = function(text) {
+    return (""+text).replace("\n","\\n");
+};
+
 /**
 This method takes the output of the method shiftTokenizer as
 an argument and analyses it further to create more specialized tokens.
@@ -127,13 +179,13 @@ var asonTokenizer = function (shiftTokens, strict) {
                         key = content.substr(1);
                         tokens.push({
                             type: 'sk',
-                            body: key
+                            body: unescapeLineFeed(key)
                         });
                         contexts.push('s');
                     } else {
                         tokens.push({
                             type: 'mk',
-                            body: content
+                            body: unescapeLineFeed(content)
                         });
                         contexts.push('m');
                     }
@@ -150,11 +202,11 @@ var asonTokenizer = function (shiftTokens, strict) {
                     if(strict && value === "") throw "value must not be empty";
                     tokens.push({
                         type: 'k',
-                        body: key
+                        body: unescapeLineFeed(key)
                     });
                     tokens.push({
                         type: 'v',
-                        body: value
+                        body: unescapeLineFeed(value)
                     });
                 }
             } else if (context === 's') {
@@ -177,7 +229,7 @@ var asonTokenizer = function (shiftTokens, strict) {
                 } else {
                     tokens.push({
                         type: 'v',
-                        body: content
+                        body: unescapeLineFeed(content)
                     });
                 }
             }
@@ -242,7 +294,7 @@ var generateJSON = function (asonTokens,prettyPrint) {
             comma();
             if(prettyPrint && lastToken.type !== 'k') output+=levelToSpace(contexts.length-1);
             if (isNaN(token.body) || token.body === "") {
-                output += '"' + token.body + '"';
+                output += '"' + escapeSpecialJsonChars(token.body) + '"';
             } else {
                 output += token.body;
             }
@@ -266,30 +318,30 @@ var generateJSON = function (asonTokens,prettyPrint) {
         case 'k':
             comma();
             if(prettyPrint) output+=levelToSpace(contexts.length-1);
-            output += '"' + token.body + '":';
+            output += '"' + escapeSpecialJsonChars(token.body) + '":';
             break;
         case 'mk':
             comma();
             if(prettyPrint) output+=levelToSpace(contexts.length-1);
-            output += '"' + token.body + '":{';
+            output += '"' + escapeSpecialJsonChars(token.body) + '":{';
             contexts.push('m');
             if(prettyPrint) output+='\n';
             break;
         case 'mke':
             comma();
-            output += '"' + token.body + '":{}';
+            output += '"' + escapeSpecialJsonChars(token.body) + '":{}';
             if(prettyPrint) output+='\n';
             break;
         case 'sk':
             comma();
             if(prettyPrint) output+=levelToSpace(contexts.length-1);
-            output += '"' + token.body + '":[';
+            output += '"' + escapeSpecialJsonChars(token.body) + '":[';
             contexts.push('s');
             if(prettyPrint) output+='\n';
             break;
         case 'ske':
             comma();
-            output += '"' + token.body + '":[]';
+            output += '"' + escapeSpecialJsonChars(token.body) + '":[]';
             break;
         }
         lastToken = token;
@@ -332,12 +384,12 @@ var objToAson = function(o, level) {
 
             var value = o[key];
             if(Array.isArray(value)) {
-                output += "." + key + "\n" + arrayToAson(value, level + 1);
+                output += "." + escapeSpecialAsonChars(key) + "\n" + arrayToAson(value, level + 1);
             } else if(value === Object(value)) { //warn: array is also an object
-                output += key + "\n" + objToAson(value, level + 1);
+                output += escapeSpecialAsonChars(key) + "\n" + objToAson(value, level + 1);
             } else {
                 //Use escaping. Turn spaces in keys into \<space>
-                output += key.replace(/ /g,"\\ ") + " " + value + "\n";
+                output += escapeSpecialAsonChars(key.replace(/ /g,"\\ ")) + " " + escapeSpecialAsonChars(value) + "\n";
             }
         }
     }
@@ -358,7 +410,7 @@ var arrayToAson = function(arr, level) {
             output += "-\n";
             output += objToAson(el, level + 1);
         } else {
-            output += el + "\n";
+            output += escapeSpecialAsonChars(el) + "\n";
         }
     }
     //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
@@ -377,7 +429,7 @@ var jsonToAson = function(json) {
         output += "-\n";
         output += objToAson(o, level + 1);
     } else {
-        output += o;
+        output += escapeSpecialAsonChars(o);
     }
     if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
     return output;

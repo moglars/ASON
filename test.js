@@ -29,6 +29,9 @@ testData = [
     ['mix pp','-\n key1 value1\n .sequence1\n  el1\n  el2\n key2 value2\n map2\n  key3 value3\n  .sequence2\n   el3\n   el4\n  key4 value4','{\n "key1":"value1",\n "sequence1":[\n  "el1",\n  "el2"],\n "key2":"value2",\n "map2":{\n  "key3":"value3",\n  "sequence2":[\n   "el3",\n   "el4"],\n  "key4":"value4"}}',true],
     ['escaped spaces for keys','-\n this\\ is\\ a\\ key this is the value','{"this is a key":"this is the value"}'],
     ['no need for escaped spaces in sequence keys','-\n .this is a key\n  this is the value','{"this is a key":["this is the value"]}'],
+    ['if number can be interpreted as number, it is a number in JSON','-\n key 5','{"key":5}'],
+    ['escaping of special chars','-\n key "\\/\b\f\t\r\\n','{"key":"\\"\\\\/\\b\\f\\t\\r\\n"}'],
+    //TODO ['equality after normalizing','-\n key /','{"key":"\\u002f"}'],
 ];
 
 var firstArg = process.argv[2];
