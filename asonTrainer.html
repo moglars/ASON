@@ -8,7 +8,7 @@
 <div id="message" style="min-height:20px"></div>
 <textarea rows="30" cols="50" id="ason"></textarea>
 <textarea rows="30" cols="50" id="json"></textarea>
-
+<input type="checkbox" id="strict"> strict mode 
 </body>
 <script type="text/javascript" >var exports = {};</script>
 <script type="text/javascript" src="ASON.js" ></script>
@@ -22,7 +22,8 @@ document.getElementById('message').appendChild(textNode);
 
 var convert = function() {
     try {
-        var json = ason.asonToJson(document.getElementById('ason').value,true);
+        var strict = document.getElementById('strict').checked;
+        var json = ason.asonToJson(document.getElementById('ason').value,true,strict);
         document.getElementById('json').value = json;
         textNode.textContent = '';
         document.getElementById('ason').style.backgroundColor = "rgb(227, 227, 254)";
@@ -32,6 +33,9 @@ var convert = function() {
     }
     
 }
+
+document.getElementById('strict').onclick = convert;
+
 document.onkeydown = function(event) {
     clearTimeout(waiter);
     waiter = null;

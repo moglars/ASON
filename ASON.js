@@ -170,6 +170,7 @@ var asonTokenizer = function (shiftTokens, strict) {
             content = locToken.body;
             if(strict && content[content.length-1] === " " ) throw "no whitespace at the end of the line allowed";
 			else if(strict && content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
+            else if(strict && content.indexOf("\t") !== -1) throw "no tabs allowed";
             if (context === 'm') {
                 lookAheadToken = shiftTokens[i + 1];
                 if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
@@ -360,9 +361,9 @@ var generateJSON = function (asonTokens,prettyPrint) {
     return output;
 };
 
-var asonToJson = function (ason,prettyPrint) {
-    var shiftTokens = shiftTokenizer(ason,false);
-    var asonTokens = asonTokenizer(shiftTokens,false);
+var asonToJson = function (ason,prettyPrint,strict) {
+    var shiftTokens = shiftTokenizer(ason,strict);
+    var asonTokens = asonTokenizer(shiftTokens,strict);
     return generateJSON(asonTokens,prettyPrint);
 };
 
