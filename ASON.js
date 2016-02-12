@@ -102,7 +102,7 @@ The other control characters are escaped with \u<code point> where <code point>
 is a hexadecimal representation of the code point.
 */
 var escapeSpecialJsonChars = function(text) {
-    text = text.replace(/\\/g,"\\\\"); //replaces \ with two of them
+    text = text.replace(/\\([^n])/g,function(match,g1){return "\\\\" + g1}) //replaces \ with two of them, ignores \n
     text = text.replace(/"/g,"\\\""); //replaces " with \"
     text = text.replace(/[\b]/g,"\\b"); //replaces backspace with \b
     text = text.replace(/[\f]/g,"\\f"); //replaces backspace with \f
@@ -180,13 +180,13 @@ var asonTokenizer = function (shiftTokens, strict) {
                         key = content.substr(1);
                         tokens.push({
                             type: 'sk',
-                            body: unescapeLineFeed(key)
+                            body: key
                         });
                         contexts.push('s');
                     } else {
                         tokens.push({
                             type: 'mk',
-                            body: unescapeLineFeed(content)
+                            body: content
                         });
                         contexts.push('m');
                     }
@@ -203,11 +203,11 @@ var asonTokenizer = function (shiftTokens, strict) {
                     if(strict && value === "") throw "value must not be empty";
                     tokens.push({
                         type: 'k',
-                        body: unescapeLineFeed(key)
+                        body: key
                     });
                     tokens.push({
                         type: 'v',
-                        body: unescapeLineFeed(value)
+                        body: value
                     });
                 }
             } else if (context === 's') {
@@ -230,7 +230,7 @@ var asonTokenizer = function (shiftTokens, strict) {
                 } else {
                     tokens.push({
                         type: 'v',
-                        body: unescapeLineFeed(content)
+                        body: content
                     });
                 }
             }
@@ -294,7 +294,11 @@ var generateJSON = function (asonTokens,prettyPrint) {
             if(contexts.length === 1) countMapOrValueElements ++;
             comma();
             if(prettyPrint && lastToken.type !== 'k') output+=levelToSpace(contexts.length-1);
-            if (isNaN(token.body) || token.body === "") {
+            if(token.body === "null" || token.body === "true" || token.body === "false") {
+                output += token.body;
+            } else if(token.body === "\\null" || token.body === "\\true" || token.body === "\\false") {
+                output += '"' + token.body.slice(1) + '"';
+            } else if (isNaN(token.body) || token.body === "") {
                 output += '"' + escapeSpecialJsonChars(token.body) + '"';
             } else {
                 output += token.body;
@@ -375,6 +379,13 @@ var levelToSpace = function(level) {
     return space;
 };
 
+var escapeJsonPrimitiveStrings = function(value) {
+    if(value === "null" || value === "true" || value === "false") {
+        return "\\" + value;
+    }
+    return value;
+};
+
 var objToAson = function(o, level) {
     var output = "";
     var hasKeys = false;
@@ -390,7 +401,7 @@ var objToAson = function(o, level) {
                 output += escapeSpecialAsonChars(key) + "\n" + objToAson(value, level + 1);
             } else {
                 //Use escaping. Turn spaces in keys into \<space>
-                output += escapeSpecialAsonChars(key.replace(/ /g,"\\ ")) + " " + escapeSpecialAsonChars(value) + "\n";
+                output += escapeSpecialAsonChars(key.replace(/ /g,"\\ ")) + " " + escapeSpecialAsonChars(escapeJsonPrimitiveStrings(value)) + "\n";
             }
         }
     }
@@ -411,7 +422,7 @@ var arrayToAson = function(arr, level) {
             output += "-\n";
             output += objToAson(el, level + 1);
         } else {
-            output += escapeSpecialAsonChars(el) + "\n";
+            output += escapeSpecialAsonChars(escapeJsonPrimitiveStrings(el)) + "\n";
         }
     }
     //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
@@ -430,7 +441,7 @@ var jsonToAson = function(json) {
         output += "-\n";
         output += objToAson(o, level + 1);
     } else {
-        output += escapeSpecialAsonChars(o);
+        output += escapeSpecialAsonChars(escapeJsonPrimitiveStrings(o));
     }
     if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
     return output;

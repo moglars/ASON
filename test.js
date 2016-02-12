@@ -3,7 +3,8 @@ ason = require("./ASON.js");
 testData = [
     ['string, one element','value','"value"'],
     ['number, one element','5','5'],
-    ['boolean, one element','true','"true"'],
+    ['boolean, one element','true','true'],
+    ['boolean escaped, one element','\\true','"true"'],
     ['anonymous map','-\n key value','{"key":"value"}'],
     ['anonymous map pretty print','-\n key value','{\n "key":"value"}', true],
     ['list','el1\nel2','["el1","el2"]'],
@@ -31,6 +32,8 @@ testData = [
     ['no need for escaped spaces in sequence keys','-\n .this is a key\n  this is the value','{"this is a key":["this is the value"]}'],
     ['if number can be interpreted as number, it is a number in JSON','-\n key 5','{"key":5}'],
     ['escaping of special chars','-\n key "\\/\b\f\t\r\\n','{"key":"\\"\\\\/\\b\\f\\t\\r\\n"}'],
+    ['interpret as primitive if possible. escape sequence if string needed.','-\n a true\n b false\n c null\n d 5\n e \\true\n f \\false\n g \\null\n h undefined','{"a":true,"b":false,"c":null,"d":5,"e":"true","f":"false","g":"null","h":"undefined"}'],
+    ['sample','-\n glossary\n  title example glossary\n  GlossDiv\n   title S\n   GlossList\n    GlossEntry\n     ID SGML\n     SortAs SGML\n     GlossTerm Standard Generalized Markup Language\n     Acronym SGML\n     Abbrev ISO 8879:1986\n     GlossDef\n      para A meta-markup language, used to create markup languages such as DocBook.\n      .GlossSeeAlso\n       GML\n       XML\n     GlossSee markup','{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}'],
     //TODO ['equality after normalizing','-\n key /','{"key":"\\u002f"}'],
 ];
 
@@ -97,3 +100,7 @@ if(process.argv[3] != undefined) {
     console.log(countSuccess + " of " + testData.length + " succeeded");
 }
 
+//TODO json normalizer so it is always same string as output of ason to json conversion:
+//1. remove whiteSpace
+//2. convert string with numbers in it into plain numbers
+//3. convert \uxxxx into characters or two-character escape sequences
