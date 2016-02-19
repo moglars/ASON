@@ -2,6 +2,7 @@
 /*jslint node: true*/
 "use strict";
 
+//-------------------------------COMMON
 /**
 Splits a string at newLine characters and
 returns an array of lines
@@ -17,61 +18,20 @@ var getLevel = function (line) {
     return line.match(/^\ */)[0].length;
 };
 
-/**
-Analyses a string and creates tokens. Possible types:
-- rs (right shift)
-- ls (left shift)
-- c (content)
-A token is an object with at least an attribute type.
-It stores the type as a string (rs, ls or c).
-The token can have a body attribute with additional information:
-- ls tokens store the number of levels to decrease
-- c tokens store the value of the content
-The tokens describe the level of values or in other words:
-The hierarchical structure of data.
-This method returns an array of tokens of type rs, ls or c.
-**/
-var shiftTokenizer = function (text,strict) {
-    var lines = getLines(text);
-    var tokensRaw = [];
-    var level = -1;
-
-    var i;
-    var line;
-    var newLevel;
-    var leftShiftCount;
-    for (i = 0; i < lines.length; i += 1) {
-        line = lines[i];
-        if(strict && line.trim() === "") throw "line must not be empty";
-        newLevel = getLevel(line);
-        if (newLevel > level) {
-            tokensRaw.push({
-                type: 'rs'
-            });
-            line = line.substr(level + 1);
-        } else if (newLevel < level) {
-            leftShiftCount = level - newLevel;
-            tokensRaw.push({
-                type: 'ls',
-                body: leftShiftCount
-            });
-            line = line.substr(newLevel);
-        } else {
-            line = line.substr(newLevel);
-        }
-        tokensRaw.push({
-            type: 'c',
-            body: line
-        });
-        level = newLevel;
-    }
-    return tokensRaw;
-};
-
 var indexOfFirstUnescapedSpace = function(text) {
     return text.replace(/\\ /g,"__").indexOf(" ");
 };
 
+var levelToSpace = function(level) {
+    var space = "";
+    for(var i = 0; i < level;i++) {
+        space += " ";
+    }
+    return space;
+};
+//-------------------------------COMMON END
+
+//-------------------------------ESCAPING
 var unescapeSpace = function(text) {
     return text.replace(/\\ /g," ");
 };
@@ -125,6 +85,66 @@ Escapes line feed characters coming from json to \n in ason
 */
 var escapeSpecialAsonChars = function(text) {
     return (""+text).replace("\n","\\n");
+};
+
+var escapeJsonPrimitiveStrings = function(value) {
+    if(value === "null" || value === "true" || value === "false") {
+        return "\\" + value;
+    }
+    return value;
+};
+//-------------------------------ESCAPING END
+
+//--------------------------------TOKENIZING
+/**
+Analyses a string and creates tokens. Possible types:
+- rs (right shift)
+- ls (left shift)
+- c (content)
+A token is an object with at least an attribute type.
+It stores the type as a string (rs, ls or c).
+The token can have a body attribute with additional information:
+- ls tokens store the number of levels to decrease
+- c tokens store the value of the content
+The tokens describe the level of values or in other words:
+The hierarchical structure of data.
+This method returns an array of tokens of type rs, ls or c.
+**/
+var shiftTokenizer = function (text,strict) {
+    var lines = getLines(text);
+    var tokensRaw = [];
+    var level = -1;
+
+    var i;
+    var line;
+    var newLevel;
+    var leftShiftCount;
+    for (i = 0; i < lines.length; i += 1) {
+        line = lines[i];
+        if(strict && line.trim() === "") throw "line must not be empty";
+        newLevel = getLevel(line);
+        if (newLevel > level) {
+            tokensRaw.push({
+                type: 'rs'
+            });
+            line = line.substr(level + 1);
+        } else if (newLevel < level) {
+            leftShiftCount = level - newLevel;
+            tokensRaw.push({
+                type: 'ls',
+                body: leftShiftCount
+            });
+            line = line.substr(newLevel);
+        } else {
+            line = line.substr(newLevel);
+        }
+        tokensRaw.push({
+            type: 'c',
+            body: line
+        });
+        level = newLevel;
+    }
+    return tokensRaw;
 };
 
 /**
@@ -245,7 +265,9 @@ var asonTokenizer = function (shiftTokens, strict) {
     }
     return tokens;
 };
+//--------------------------------TOKENIZING END
 
+//--------------------------------TOKENS TO JSON
 /**
 Interprets ason tokens and generates JSON.
 **/
@@ -364,28 +386,11 @@ var generateJSON = function (asonTokens,prettyPrint) {
     if(countMapOrValueElements === 1 && countSequenceElements === 0) output = output.slice(1,output.length-1);
     return output;
 };
+//--------------------------------TOKENS TO JSON END
 
-var asonToJson = function (ason,prettyPrint,strict) {
-    var shiftTokens = shiftTokenizer(ason,strict);
-    var asonTokens = asonTokenizer(shiftTokens,strict);
-    return generateJSON(asonTokens,prettyPrint);
-};
 
-var levelToSpace = function(level) {
-    var space = "";
-    for(var i = 0; i < level;i++) {
-        space += " ";
-    }
-    return space;
-};
 
-var escapeJsonPrimitiveStrings = function(value) {
-    if(value === "null" || value === "true" || value === "false") {
-        return "\\" + value;
-    }
-    return value;
-};
-
+//-----------------------------JS Object to ASON
 var objToAson = function(o, level) {
     var output = "";
     var hasKeys = false;
@@ -428,7 +433,9 @@ var arrayToAson = function(arr, level) {
     //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
     return output;
 };
+//-----------------------------JS Object to ASON END
 
+//-----------------------------CONVERSIONS
 var jsonToAson = function(json) {
     var o = JSON.parse(json);
     var output = "";
@@ -447,6 +454,16 @@ var jsonToAson = function(json) {
     return output;
 };
 
+var asonToJson = function (ason,prettyPrint,strict) {
+    var shiftTokens = shiftTokenizer(ason,strict);
+    var asonTokens = asonTokenizer(shiftTokens,strict);
+    return generateJSON(asonTokens,prettyPrint);
+};
+
+//TODO parse(text) ASON TO OBJECT
+
+//TODO stringify(object) OBJECT TO ASON
+//-----------------------------CONVERSIONS END
 
 exports.asonToJson = asonToJson;
 exports.getLines = getLines;
