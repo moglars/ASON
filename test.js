@@ -31,7 +31,7 @@ testData = [
     ['escaped spaces for keys','-\n this\\ is\\ a\\ key this is the value','{"this is a key":"this is the value"}'],
     ['no need for escaped spaces in sequence keys','-\n .this is a key\n  this is the value','{"this is a key":["this is the value"]}'],
     ['if number can be interpreted as number, it is a number in JSON','-\n key 5','{"key":5}'],
-    ['escaping of special chars','-\n key "\\/\b\f\t\r\\n','{"key":"\\"\\\\/\\b\\f\\t\\r\\n"}'],
+    ['escaping of special chars','-\n key "\\\\/\\b\\f\\t\\r\\n','{"key":"\\"\\\\/\\b\\f\\t\\r\\n"}'],
     ['interpret as primitive if possible. escape sequence if string needed.','-\n a true\n b false\n c null\n d 5\n e \\true\n f \\false\n g \\null\n h undefined','{"a":true,"b":false,"c":null,"d":5,"e":"true","f":"false","g":"null","h":"undefined"}'],
     ['sample','-\n glossary\n  title example glossary\n  GlossDiv\n   title S\n   GlossList\n    GlossEntry\n     ID SGML\n     SortAs SGML\n     GlossTerm Standard Generalized Markup Language\n     Acronym SGML\n     Abbrev ISO 8879:1986\n     GlossDef\n      para A meta-markup language, used to create markup languages such as DocBook.\n      .GlossSeeAlso\n       GML\n       XML\n     GlossSee markup','{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}'],
     ['backslash as value','-\n backslash \\\\','{"backslash":"\\\\"}'],
@@ -46,9 +46,9 @@ var onlyFailed = flags.indexOf('f') != -1;
 
 
 var count = 0;
-function runTest(d,fn) {
+function runTest(d,fn, testType) {
     var success = true;
-    var log = count + " " + d[0];
+    var log = count + " " + d[0] + " " + testType;
     try {
         var r = fn(d[1],d[3]);
         if(r === d[2]) {
@@ -87,7 +87,7 @@ function runTest(d,fn) {
 
 var countSuccess = 0;
 var runBothWays = function(td) {
-    if(runTest(td,ason.asonToJson) && runTest([td[0],td[2],td[1]],ason.jsonToAson)) countSuccess++;
+    if(runTest(td,ason.asonToJson,"ason to json") && runTest([td[0],td[2],td[1]],ason.jsonToAson, "json to ason")) countSuccess++;
     count++;
 };
 
@@ -115,8 +115,8 @@ var escapeTestData = [
 ];
 
 for(var i = 0; i < escapeTestData.length; i++) {
-    if(escapeTestData[i][0] !== ason.unescapeFromJSON(escapeTestData[i][1])) {
-        console.log("escape tests failed. Expected " +escapeTestData[i][0] +" but got " +ason.unescapeFromJSON(escapeTestData[i][1]));
+    if(escapeTestData[i][0] !== ason.unescapeFromJson(escapeTestData[i][1])) {
+        console.log("escape tests failed. Expected " +escapeTestData[i][0] +" but got " +ason.unescapeFromJson(escapeTestData[i][1]));
     }
 }
 
@@ -125,7 +125,7 @@ var valueEscapeTestData = [
     ["true","true"],
     ["false","false"],
     ["1","1"],
-    ["-0.234e+10","-0.234e+10"],
+    ["-0.234e+10","-0.234e+10"],//TODO normalizing needed
 
     ["\\null",'"null"'],
     ["\\true",'"true"'],
@@ -133,16 +133,22 @@ var valueEscapeTestData = [
     ["\\1",'"1"'],
     ["\\-0.234e+10",'"-0.234e+10"'],
     
-    ["\\\\null",'"\\null"'],
-    ["\\\\true",'"\\true"'],
-    ["\\\\false",'"\\false"'],
-    ["\\\\1",'"\\1"'],
-    ["\\\\-0.234e+10",'"\\-0.234e+10"'],    
+    //same number of backslashes because in ason, 
+    //backslash is not escaped for escaping primitives. 
+    //Json doesn't know the concept of escaping primitives. 
+    //It just escapes the backslash. So there must be 2 of them.
+    ["\\\\null",'"\\\\null"'], 
+    ["\\\\true",'"\\\\true"'],
+    ["\\\\false",'"\\\\false"'],
+    ["\\\\1",'"\\\\1"'],
+    ["\\\\-0.234e+10",'"\\\\-0.234e+10"'],    
 ];
 
+//Tests if ason values are properly converted to json value strings
 for(var i = 0; i < valueEscapeTestData.length; i++) {
-    if(ason.unescapeFromAsonValueToJsonValue(valueEscapeTestData[i][0]) !== valueEscapeTestData[i][1]) {
-        console.log("escape tests failed. Expected " +valueEscapeTestData[i][1] +" but got " +ason.unescapeFromAsonValueToJsonValue(valueEscapeTestData[i][1]));
+    var jsonValueFormat = ason.convertObjectValueToJsonValueFormat(ason.convertAsonValueToObjectValue(valueEscapeTestData[i][0]));
+    if(jsonValueFormat !== valueEscapeTestData[i][1]) {
+        console.log("escape tests failed. Expected " +valueEscapeTestData[i][1] +" but got " +jsonValueFormat);
     }
 }
 //TODO json normalizer so it is always same string as output of ason to json conversion:
