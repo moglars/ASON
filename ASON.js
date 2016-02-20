@@ -104,7 +104,7 @@ var unescapeFromJSON = function(text) {
     }
     
     //add the rest to unescapedString
-    unescapedString+=text.substr(escapeSequenceIndex);
+    unescapedString+=text.substring(escapeSequenceIndex);
     return unescapedString;
 };
 
@@ -124,7 +124,8 @@ The other control characters are escaped with \u<code point> where <code point>
 is a hexadecimal representation of the code point.
 */
 var escapeSpecialJsonChars = function(text) {
-  
+    //TODO überarbeiten
+    
     text = text.replace(/\\([^n])/g,function(match,g1){return "\\\\" + g1}) //replaces \ with two of them, ignores \n
     text = text.replace(/"/g,"\\\""); //replaces " with \"
     text = text.replace(/[\b]/g,"\\b"); //replaces backspace with \b
@@ -142,6 +143,38 @@ var escapeSpecialJsonChars = function(text) {
         return "\\u" + hex;
     });
 };
+
+var escapeToJSON = function(text) {
+    var escapedString = "";
+    
+    //map char to escape sequence
+    var specialMapping = {
+        "\"":"\\\"",
+        "\\":"\\\\",
+        // "/":"\\/",
+        "\b":"\\b",
+        "\f":"\\f",
+        "\n":"\\n",
+        "\r":"\\r",
+        "\t":"\\t",
+    };
+    
+    var index = -1;
+    
+    for(var i = 0;i<text.length;i++) {
+        if(specialMapping[text[i]] !== undefined) {
+            escapedString+=specialMapping[text[i]];
+        } else if(/[\u0000-\u0007\u000B\u000E-\u001F]/.test(text[i])) {
+            var codePoint = text[i].codePointAt(0);
+            var hex = ("0000"+codePoint.toString(16)).slice(-4);
+            escapedString+= "\\u" + hex
+        } else {
+            escapedString+=text[i];
+        }
+    }
+    
+    return escapedString;
+}
 
 /**
 Escapes line feed characters coming from json to \n in ason
