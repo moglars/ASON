@@ -46,6 +46,68 @@ var unescapeLineFeed = function(text) {
     return text.replace("\\n","\n"); 
 }
 
+var unescapeFromJSON = function(text) {
+    //map escape sequence to char
+    var specialMapping = {
+        "\\\"":"\"",
+        "\\\\":"\\",
+        "\\/":"/",
+        "\\b":"\b",
+        "\\f":"\f",
+        "\\n":"\n",
+        "\\r":"\r",
+        "\\t":"\t",
+    };
+
+    //output
+    var unescapedString = "";
+    
+    //search index
+    var escapeSequenceIndex = -1;
+    
+    while(true) {
+        //find escape sequence
+        var newIndex = text.indexOf("\\", escapeSequenceIndex);
+        
+        //no action if no escape sequence found
+        if(newIndex == -1) break;
+        
+        //add text from previous index to new index (exclusive) to unescapedString
+        unescapedString+=text.substring(escapeSequenceIndex,newIndex);
+        
+        //work now with new index
+        escapeSequenceIndex = newIndex;
+        
+        //get char from mapping if possible
+        var escapeSequence = text.substr(escapeSequenceIndex,2);
+        var specialChar = specialMapping[escapeSequence];
+        
+        //if char is from mapping
+        if(specialChar !== undefined) {
+            //Add it to unescapedString
+            unescapedString+=specialChar;
+            //next search begins at escapeSequenceIndex plus 2
+            escapeSequenceIndex+=2;
+        } else {
+            //Check if it is a code point escape sequence
+            var matchResult = text.substr(escapeSequenceIndex,6).match(/^\\u([0-9A-Fa-f]{4})$/);
+            if(matchResult !== null) {
+                //Add the character the code point represents to unescapedString
+                var codePoint = matchResult[1];
+                unescapedString+=String.fromCharCode(parseInt(codePoint, 16));
+                 escapeSequenceIndex+=6;
+            } else {
+                //otherwise, just ignore the backslash
+                escapeSequenceIndex+=1;
+            }
+        }
+    }
+    
+    //add the rest to unescapedString
+    unescapedString+=text.substr(escapeSequenceIndex);
+    return unescapedString;
+};
+
 /**
 As of ecma-404 specification of JSON, the quotation mark (U+0022),
 the reverse solidus (U+005C) and the control characters U+0000 to 
@@ -62,6 +124,7 @@ The other control characters are escaped with \u<code point> where <code point>
 is a hexadecimal representation of the code point.
 */
 var escapeSpecialJsonChars = function(text) {
+  
     text = text.replace(/\\([^n])/g,function(match,g1){return "\\\\" + g1}) //replaces \ with two of them, ignores \n
     text = text.replace(/"/g,"\\\""); //replaces " with \"
     text = text.replace(/[\b]/g,"\\b"); //replaces backspace with \b
@@ -472,3 +535,4 @@ exports.shiftTokenizer = shiftTokenizer;
 exports.asonTokenizer = asonTokenizer;
 exports.generateJSON = generateJSON;
 exports.jsonToAson = jsonToAson;
+exports.unescapeFromJSON = unescapeFromJSON;

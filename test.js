@@ -34,6 +34,7 @@ testData = [
     ['escaping of special chars','-\n key "\\/\b\f\t\r\\n','{"key":"\\"\\\\/\\b\\f\\t\\r\\n"}'],
     ['interpret as primitive if possible. escape sequence if string needed.','-\n a true\n b false\n c null\n d 5\n e \\true\n f \\false\n g \\null\n h undefined','{"a":true,"b":false,"c":null,"d":5,"e":"true","f":"false","g":"null","h":"undefined"}'],
     ['sample','-\n glossary\n  title example glossary\n  GlossDiv\n   title S\n   GlossList\n    GlossEntry\n     ID SGML\n     SortAs SGML\n     GlossTerm Standard Generalized Markup Language\n     Acronym SGML\n     Abbrev ISO 8879:1986\n     GlossDef\n      para A meta-markup language, used to create markup languages such as DocBook.\n      .GlossSeeAlso\n       GML\n       XML\n     GlossSee markup','{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}'],
+    ['backslash as value','-\n backslash \\','{"backslash":"\\"}'],
     //TODO ['equality after normalizing','-\n key /','{"key":"\\u002f"}'],
 ];
 
@@ -100,6 +101,23 @@ if(process.argv[3] != undefined) {
     console.log(countSuccess + " of " + testData.length + " succeeded");
 }
 
+var escapeTestData = [
+    ["\"","\\\""],
+    ["\\","\\\\"],
+    ["/","\\/"],
+    ["\b","\\b"],
+    ["\f","\\f"],
+    ["\n","\\n"],
+    ["\r","\\r"],
+    ["\t","\\t"],
+    ["/","\\u002f"],
+];
+
+for(var i = 0; i < escapeTestData.length; i++) {
+    if(escapeTestData[i][0] !== ason.unescapeFromJSON(escapeTestData[i][1])) {
+        console.log("escape tests failed. Expected " +escapeTestData[i][0] +" but got " +ason.unescapeFromJSON(escapeTestData[i][1]));
+    }
+}
 //TODO json normalizer so it is always same string as output of ason to json conversion:
 //1. remove whiteSpace
 //2. convert string with numbers in it into plain numbers
