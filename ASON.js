@@ -32,6 +32,7 @@ var levelToSpace = function(level) {
 //-------------------------------COMMON END
 
 //-------------------------------ESCAPING
+//deprecated
 var unescapeSpace = function(text) {
     return text.replace(/\\ /g," ");
 };
@@ -42,6 +43,7 @@ write the escape sequence \n.
 This method converts the escape sequence back 
 to a line feed character.
 */
+//deprecated
 var unescapeLineFeed = function(text) {
     return text.replace("\\n","\n"); 
 }
@@ -123,6 +125,7 @@ See following list for used two-character escape sequences:
 The other control characters are escaped with \u<code point> where <code point>
 is a hexadecimal representation of the code point.
 */
+//deprecated
 var escapeSpecialJsonChars = function(text) {
     //TODO überarbeiten
     
@@ -179,16 +182,42 @@ var escapeToJSON = function(text) {
 /**
 Escapes line feed characters coming from json to \n in ason
 */
+//deprecated
 var escapeSpecialAsonChars = function(text) {
     return (""+text).replace("\n","\\n");
 };
 
+//deprecated
 var escapeJsonPrimitiveStrings = function(value) {
     if(value === "null" || value === "true" || value === "false") {
         return "\\" + value;
     }
     return value;
 };
+
+/**
+Escaping allows to depict null, true, false and numbers (defined in ecma-404) as strings.
+Without escaping, they are converted to json primitives.
+The difference is that the strings have " chars around it
+while primitives do not.
+*/
+var unescapeFromAsonValueToJsonValue = function(value) {
+    var matchResult = value.match(/^(\\*)(null|true|false|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?)$/);
+    var unescapedString
+    if(matchResult !== null) {
+        var backslashes = matchResult[1];
+        var value = matchResult[2];
+        
+        if(backslashes.length === 0) {
+            //its a primitive. no " chars
+            return value;
+        } else {
+            //remove one backslash and at " chars around it
+            return '"' + backslashes.slice(1) + value + '"';
+        }
+    }
+    return '"' + value + '"';
+}
 //-------------------------------ESCAPING END
 
 //--------------------------------TOKENIZING
@@ -569,3 +598,4 @@ exports.asonTokenizer = asonTokenizer;
 exports.generateJSON = generateJSON;
 exports.jsonToAson = jsonToAson;
 exports.unescapeFromJSON = unescapeFromJSON;
+exports.unescapeFromAsonValueToJsonValue = unescapeFromAsonValueToJsonValue;

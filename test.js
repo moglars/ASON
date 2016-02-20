@@ -119,6 +119,32 @@ for(var i = 0; i < escapeTestData.length; i++) {
         console.log("escape tests failed. Expected " +escapeTestData[i][0] +" but got " +ason.unescapeFromJSON(escapeTestData[i][1]));
     }
 }
+
+var valueEscapeTestData = [
+    ["null","null"],
+    ["true","true"],
+    ["false","false"],
+    ["1","1"],
+    ["-0.234e+10","-0.234e+10"],
+
+    ["\\null",'"null"'],
+    ["\\true",'"true"'],
+    ["\\false",'"false"'],
+    ["\\1",'"1"'],
+    ["\\-0.234e+10",'"-0.234e+10"'],
+    
+    ["\\\\null",'"\\null"'],
+    ["\\\\true",'"\\true"'],
+    ["\\\\false",'"\\false"'],
+    ["\\\\1",'"\\1"'],
+    ["\\\\-0.234e+10",'"\\-0.234e+10"'],    
+];
+
+for(var i = 0; i < valueEscapeTestData.length; i++) {
+    if(ason.unescapeFromAsonValueToJsonValue(valueEscapeTestData[i][0]) !== valueEscapeTestData[i][1]) {
+        console.log("escape tests failed. Expected " +valueEscapeTestData[i][1] +" but got " +ason.unescapeFromAsonValueToJsonValue(valueEscapeTestData[i][1]));
+    }
+}
 //TODO json normalizer so it is always same string as output of ason to json conversion:
 //1. remove whiteSpace
 //2. convert string with numbers in it into plain numbers
