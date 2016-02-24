@@ -4,11 +4,22 @@
 <meta charset="utf-8" />
 <title>asonTrainer</title>
 </head>
-<body>
+<body style="font-family:sans-serif">
 <div id="message" style="min-height:20px"></div>
-<textarea rows="30" cols="50" id="ason"></textarea>
+<textarea rows="30" cols="50" id="ason">-
+ key value
+ .arrayKey
+  value
+  42
+  true
+  null
+  -
+   anonymous object
+  .
+   array in array</textarea>
 <textarea rows="30" cols="50" id="json"></textarea>
 <input type="checkbox" id="strict"> strict mode 
+<p>Open console with F12. Type in asonObject. Use ason.parse() and ason.stringify().
 </body>
 <script type="text/javascript" >var exports = {};</script>
 <script type="text/javascript" src="ASON.js" ></script>
@@ -23,8 +34,10 @@ document.getElementById('message').appendChild(textNode);
 var convert = function() {
     try {
         var strict = document.getElementById('strict').checked;
-        var json = ason.asonToJson(document.getElementById('ason').value,true,strict);
-        document.getElementById('json').value = json;
+        var asonStr = document.getElementById('ason').value;
+        var jsonStr = ason.asonToJson(asonStr,true,strict);
+        document.getElementById('json').value = jsonStr;
+        asonObject = ason.parse(asonStr);
         textNode.textContent = '';
         document.getElementById('ason').style.backgroundColor = "rgb(227, 227, 254)";
     } catch(e) {
@@ -56,5 +69,7 @@ document.onkeydown = function(event) {
     }
     
 };
+
+convert();
 </script>
 </html>

@@ -611,13 +611,13 @@ var arrayToAson = function(arr, level) {
 //-----------------------------JS Object to ASON END
 
 //-----------------------------CONVERSIONS
-var jsonToAson = function(json) {
-    var o = JSON.parse(json);
+/**
+Converts a JS object to Ason
+*/
+var stringify = function(o) {
     var output = "";
     var level = 0;
     if(Array.isArray(o)){
-        // output += ".\n";
-        // output += arrayToAson(o, level + 1);
         output += arrayToAson(o, level);
     } else if(o === Object(o)) {
         output += "-\n";
@@ -635,9 +635,48 @@ var asonToJson = function (ason,prettyPrint,strict) {
     return generateJSON(asonTokens,prettyPrint);
 };
 
-//TODO parse(text) ASON TO OBJECT
+var jsonToAson = function(json) {
+    //TODO direct conversion json ason?
+    var o = JSON.parse(json);
+    return stringify(o);
+};
 
-//TODO stringify(object) OBJECT TO ASON
+/**
+Converts ASON to a JS Object
+*/
+var parse = function(str) {
+    var tokens = asonTokenizer(shiftTokenizer(str,false),false);
+    var nRootChildren = 0;
+    var stack = [[]];
+    for(var currentIndex = 0; currentIndex < tokens.length; currentIndex++){
+        if(tokens[currentIndex].type === 'k') {
+            stack[stack.length-1][tokens[currentIndex].body] = tokens[++currentIndex].body;
+        } else if(tokens[currentIndex].type === 'v') {
+            if(stack.length === 1) nRootChildren++;
+            stack[stack.length-1].push(tokens[currentIndex].body);
+        } else if(tokens[currentIndex].type === 'mk') {
+            stack.push(stack[stack.length-1][tokens[currentIndex].body] = {});
+        } else if(tokens[currentIndex].type === 'sk') {
+            stack.push(stack[stack.length-1][tokens[currentIndex].body] = []);
+        } else if(tokens[currentIndex].type === 'ls') {
+            for(var i = 0; i < tokens[currentIndex].body; i++) {
+                stack.pop();
+            }
+        } else if(tokens[currentIndex].type === 'am') {
+            if(stack.length === 1) nRootChildren++;
+            var o = {};
+            stack[stack.length-1].push(o);
+            stack.push(o);
+        } else if(tokens[currentIndex].type === 's') {
+            if(stack.length === 1) nRootChildren++;
+            var a = [];
+            stack[stack.length-1].push(a);
+            stack.push(a);
+        }
+    }
+    if(nRootChildren === 1) return stack[0][0];
+    return stack[0];
+};
 //-----------------------------CONVERSIONS END
 
 exports.asonToJson = asonToJson;
@@ -647,6 +686,8 @@ exports.shiftTokenizer = shiftTokenizer;
 exports.asonTokenizer = asonTokenizer;
 exports.generateJSON = generateJSON;
 exports.jsonToAson = jsonToAson;
+exports.stringify = stringify;
+exports.parse = parse;
 
 exports.unescapeFromJson = unescapeFromJson;
 exports.convertAsonValueToObjectValue = convertAsonValueToObjectValue;
