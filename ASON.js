@@ -327,7 +327,7 @@ This method returns an array of tokens of type rs, ls or c.
 var shiftTokenizer = function (text,strict) {
     var lines = getLines(text);
     var tokensRaw = [];
-    var level = -1;
+    var level = 0;
 
     var i;
     var line;
@@ -337,7 +337,7 @@ var shiftTokenizer = function (text,strict) {
         line = lines[i];
         if(strict && line.trim() === "") throw "line must not be empty";
         newLevel = getLevel(line);
-        if (newLevel > level) {
+        if (newLevel == level + 1) {
             tokensRaw.push({
                 type: 'rs'
             });
@@ -349,8 +349,10 @@ var shiftTokenizer = function (text,strict) {
                 body: leftShiftCount
             });
             line = line.substr(newLevel);
-        } else {
+        } else if(newLevel == level){
             line = line.substr(newLevel);
+        } else {
+            throw "unexpected level. Only an indention increase of one space per line is allowed";
         }
         tokensRaw.push({
             type: 'c',
@@ -426,7 +428,6 @@ var asonTokenizer = function (shiftTokens, strict) {
                         contexts.push('m');
                     }
                     i += 1;
-                    tokens.push(lookAheadToken);
                 } else {
                     if(mapKeyEmptySequenceRegEx.test(content)){
                         tokens.push({
@@ -476,7 +477,6 @@ var asonTokenizer = function (shiftTokens, strict) {
                         contexts.push('m');
                     }
                     i += 1;
-                    tokens.push(lookAheadToken);
                 } else {
                     if(content[0] === '.') {
                         if(strict && content.length > 1) throw "in a sequence, an empty sequence is depicted with only one . character";
@@ -502,6 +502,7 @@ var asonTokenizer = function (shiftTokens, strict) {
             }
             tokens.push(locToken);
         } else {
+            if(strict) throw "unkown token: " + JSON.stringify(locToken);
             tokens.push(locToken);
         }
     }
@@ -524,6 +525,7 @@ var generateJSON = function (asonTokens,prettyPrint) {
 
     var lastToken;
     var comma = function () {
+        if(lastToken !== undefined)
         switch (lastToken.type) {
         case 'v':
         case 'ske':
@@ -559,7 +561,7 @@ var generateJSON = function (asonTokens,prettyPrint) {
         case 'v':
             if(contexts.length === 1) countMapOrValueElements ++;
             comma();
-            if(prettyPrint && lastToken.type !== 'k') output+=levelToSpace(contexts.length-1);
+            if(prettyPrint && lastToken !== undefined && lastToken.type !== 'k') output+=levelToSpace(contexts.length-1);
             output += convertObjectValueToJsonValueFormat(token.body);
             break;
         case 'am':
