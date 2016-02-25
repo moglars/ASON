@@ -9,6 +9,17 @@ interpreted as primitives but are escaped
 to enforce string representation
 */
 var primitiveEscapeSequenceRegEx = /^(\\*)(null|true|false|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?)$/;
+
+/**
+matches map keys that have an empty map as value
+*/
+var mapKeyEmptyMapRegEx = /^(\\*)-.*$/;
+
+/**
+matches map keys that have an empty sequence as value
+*/
+var mapKeyEmptySequenceRegEx = /^(\\*)\..*$/;
+
 /**
 Splits a string at newLine characters and
 returns an array of lines
@@ -374,7 +385,6 @@ var asonTokenizer = function (shiftTokens, strict) {
 			else if(strict && content[content.length-1] === "\r" ) throw "carriage returns not allowed for line breaks";
             else if(strict && content.indexOf("\t") !== -1) throw "no tabs allowed";
             //TODO throw exception if ason tokens contain unescaped special characters: 005C, 0000-001F must be escaped.
-            //TODO 0022 quotation mark doesn't have to be escaped in ason, but in json.
             if (context === 'm') {
                 lookAheadToken = shiftTokens[i + 1];
                 if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
@@ -397,21 +407,33 @@ var asonTokenizer = function (shiftTokens, strict) {
                     i += 1;
                     tokens.push(lookAheadToken);
                 } else {
-                    //ignore escaped spaces
-                    firstSpacePosition = indexOfFirstUnescapedSpace(content);
-                    if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
-                    key = content.substring(0, firstSpacePosition);
-                    value = content.substr(firstSpacePosition + 1);
-                    if(strict && key === "") throw "value key must not be empty";
-                    if(strict && value === "") throw "value must not be empty";
-                    tokens.push({
-                        type: 'k',
-                        body: convertAsonKeyToObjectValue(key)
-                    });
-                    tokens.push({
-                        type: 'v',
-                        body: convertAsonValueToObjectValue(value)
-                    });
+                    if(mapKeyEmptySequenceRegEx.test(content)){
+                        tokens.push({
+                            type: 'ske',
+                            body: unescapeFromJson(content.substr(1))
+                        })
+                    } else if(mapKeyEmptySequenceRegEx.test(content)) {
+                        tokens.push({
+                            type: 'mke',
+                            body: unescapeFromJson(content.substr(1))
+                        })
+                    } else {
+                        //ignore escaped spaces
+                        firstSpacePosition = indexOfFirstUnescapedSpace(content);
+                        if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
+                        key = content.substring(0, firstSpacePosition);
+                        value = content.substr(firstSpacePosition + 1);
+                        if(strict && key === "") throw "value key must not be empty";
+                        if(strict && value === "") throw "value must not be empty";
+                        tokens.push({
+                            type: 'k',
+                            body: convertAsonKeyToObjectValue(key)
+                        });
+                        tokens.push({
+                            type: 'v',
+                            body: convertAsonValueToObjectValue(value)
+                        });
+                    }
                 }
             } else if (context === 's') {
                 lookAheadToken = shiftTokens[i + 1];
@@ -431,10 +453,22 @@ var asonTokenizer = function (shiftTokens, strict) {
                     i += 1;
                     tokens.push(lookAheadToken);
                 } else {
-                    tokens.push({
-                        type: 'v',
-                        body: convertAsonValueToObjectValue(content)
-                    });
+                    if(content[0] === '.') {
+                        if(strict && content.length > 1) throw "in a sequence, an empty sequence is depicted with only one . character";
+                        tokens.push({
+                            type: 'se',
+                        });
+                    } else if(content[0] === '-') {
+                        if(strict && content.length > 1) throw "in a sequence, an empty map is depicted with only one - character";
+                        tokens.push({
+                            type: 'me',
+                        });
+                    } else {
+                        tokens.push({
+                            type: 'v',
+                            body: convertAsonValueToObjectValue(content)
+                        });
+                    }
                 }
             }
         } else if (locToken.type === 'ls') {
@@ -469,6 +503,8 @@ var generateJSON = function (asonTokens,prettyPrint) {
         case 'v':
         case 'ske':
         case 'mke':
+        case 'se':
+        case 'me':
         case 'ls':
             output += ',';
             if(prettyPrint) output+='\n';
@@ -531,6 +567,7 @@ var generateJSON = function (asonTokens,prettyPrint) {
             break;
         case 'mke':
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + escapeToJson(token.body) + '":{}';
             if(prettyPrint) output+='\n';
             break;
@@ -543,7 +580,18 @@ var generateJSON = function (asonTokens,prettyPrint) {
             break;
         case 'ske':
             comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + escapeToJson(token.body) + '":[]';
+            break;
+        case 'se':
+            comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
+            output += '[]';
+            break;
+        case 'me':
+            comma();
+            if(prettyPrint) output+=levelToSpace(contexts.length-1);
+            output += '{}';
             break;
         }
         lastToken = token;
