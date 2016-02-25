@@ -126,6 +126,11 @@ var unescapeFromJson = function(text) {
                  escapeSequenceIndex+=6;
             } else {
                 //otherwise, just ignore the backslash
+                // escapeSequenceIndex+=1;
+                
+                //!Non-standard: as long as unescaping is only done for ason text, a backslash that
+                //doesn't escape a specific char should not be ignored. Instead, it is printed:
+                unescapedString += "\\";
                 escapeSequenceIndex+=1;
             }
         }
