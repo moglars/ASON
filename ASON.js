@@ -232,7 +232,7 @@ that can be a primitive
 */
 var convertAsonValueToObjectValue = function(str) {
     var matchResult = str.match(primitiveEscapeSequenceRegEx);
-    var unescapedString
+    var unescapedString;
     if(matchResult !== null) {
         var backslashes = matchResult[1];
         var str = matchResult[2];
@@ -250,6 +250,22 @@ var convertAsonValueToObjectValue = function(str) {
     }
     return unescapeFromJson(str);
 }
+
+/**
+Converts an ASON key for empty maps or sequences into an object value.
+*/
+var convertAsonEmptyKeyToObjectValue = function(str) {
+    var matchResult = str.match(/^(\\*)(.*)/);
+    if(matchResult !== null) {
+        var backslashes = matchResult[1];
+        var str = matchResult[2];
+        if(backslashes.length !== 0) {
+            return backslashes.slice(1) + unescapeFromJson(str);
+        } else {
+            return unescapeFromJson(str.slice(1));
+        }
+    }
+};
 
 /**
 Converts an object value to a string that represents
@@ -410,12 +426,12 @@ var asonTokenizer = function (shiftTokens, strict) {
                     if(mapKeyEmptySequenceRegEx.test(content)){
                         tokens.push({
                             type: 'ske',
-                            body: unescapeFromJson(content.substr(1))
+                            body: convertAsonEmptyKeyToObjectValue(content)
                         })
-                    } else if(mapKeyEmptySequenceRegEx.test(content)) {
+                    } else if(mapKeyEmptyMapRegEx.test(content)) {
                         tokens.push({
                             type: 'mke',
-                            body: unescapeFromJson(content.substr(1))
+                            body: convertAsonEmptyKeyToObjectValue(content)
                         })
                     } else {
                         //ignore escaped spaces
@@ -423,6 +439,10 @@ var asonTokenizer = function (shiftTokens, strict) {
                         if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
                         key = content.substring(0, firstSpacePosition);
                         value = content.substr(firstSpacePosition + 1);
+                        if(key === "") {
+                            key = value;
+                            value = "";
+                        }
                         if(strict && key === "") throw "value key must not be empty";
                         if(strict && value === "") throw "value must not be empty";
                         tokens.push({
@@ -569,7 +589,6 @@ var generateJSON = function (asonTokens,prettyPrint) {
             comma();
             if(prettyPrint) output+=levelToSpace(contexts.length-1);
             output += '"' + escapeToJson(token.body) + '":{}';
-            if(prettyPrint) output+='\n';
             break;
         case 'sk':
             comma();
@@ -720,6 +739,16 @@ var parse = function(str) {
             var a = [];
             stack[stack.length-1].push(a);
             stack.push(a);
+        } else if(tokens[currentIndex].type === 'mke') {
+            stack[stack.length-1][tokens[currentIndex].body] = {};
+        } else if(tokens[currentIndex].type === 'ske') {
+            stack[stack.length-1][tokens[currentIndex].body] = [];
+        } else if(tokens[currentIndex].type === 'me') {
+            if(stack.length === 1) nRootChildren++;
+            stack[stack.length-1].push({});
+        } else if(tokens[currentIndex].type === 'se') {
+            if(stack.length === 1) nRootChildren++;
+            stack[stack.length-1].push([]);
         }
     }
     if(nRootChildren === 1) return stack[0][0];
