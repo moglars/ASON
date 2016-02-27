@@ -35,8 +35,8 @@ testData = [
     ['interpret as primitive if possible. escape sequence if string needed.','-\n a true\n b false\n c null\n d 5\n e \\true\n f \\false\n g \\null\n h undefined','{"a":true,"b":false,"c":null,"d":5,"e":"true","f":"false","g":"null","h":"undefined"}'],
     ['sample','-\n glossary\n  title example glossary\n  GlossDiv\n   title S\n   GlossList\n    GlossEntry\n     ID SGML\n     SortAs SGML\n     GlossTerm Standard Generalized Markup Language\n     Acronym SGML\n     Abbrev ISO 8879:1986\n     GlossDef\n      para A meta-markup language, used to create markup languages such as DocBook.\n      .GlossSeeAlso\n       GML\n       XML\n     GlossSee markup','{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}'],
     ['backslash as value','-\n backslash \\\\','{"backslash":"\\\\"}'],
-    //TODO ['equality after normalizing','-\n key /','{"key":"\\u002f"}'],
-    //TODO unescapeFromJSON("\uD834\uDD1E") == "\uD834\uDD1E"
+
+
 ];
 
 var firstArg = process.argv[2];
@@ -125,7 +125,7 @@ var valueEscapeTestData = [
     ["true","true"],
     ["false","false"],
     ["1","1"],
-    ["-0.234e+10","-0.234e+10"],//TODO normalizing needed
+    ["-2.34e+21","-2.34e+21"],
 
     ["\\null",'"null"'],
     ["\\true",'"true"'],
@@ -150,6 +150,15 @@ for(var i = 0; i < valueEscapeTestData.length; i++) {
     if(jsonValueFormat !== valueEscapeTestData[i][1]) {
         console.log("escape tests failed. Expected " +valueEscapeTestData[i][1] +" but got " +jsonValueFormat);
     }
+}
+    
+var msg = 'equality after conversion to JS object';
+var asonStr = '-\n key /';
+var jsonStr = '{"key":"\\u002f"}';
+var asonObj = ason.parse(asonStr);
+var jsonObj = JSON.parse(jsonStr);
+if(asonObj.key !== jsonObj.key) {
+    console.log(msg + " test failed. Expected: " + asonObj.key + " but got " + jsonObj.key);
 }
 //TODO json normalizer so it is always same string as output of ason to json conversion:
 //1. remove whiteSpace
