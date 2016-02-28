@@ -1,7 +1,7 @@
 /*jshint node: true*/
 /*jslint node: true*/
 "use strict";
-
+//TODO no escaping for quotation mark backslash solidus
 //-------------------------------COMMON
 /**
 Used to match strings that could be
@@ -9,16 +9,6 @@ interpreted as primitives but are escaped
 to enforce string representation
 */
 var primitiveEscapeSequenceRegEx = /^(\\*)(null|true|false|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?)$/;
-
-/**
-matches map keys that have an empty map as value
-*/
-var mapKeyEmptyMapRegEx = /^(\\*)-.*$/;
-
-/**
-matches map keys that have an empty sequence as value
-*/
-var mapKeyEmptySequenceRegEx = /^(\\*)\..*$/;
 
 /**
 Splits a string at newLine characters and
@@ -188,7 +178,14 @@ Json escaping is applied.
 Furthermore, spaces are escaped.
 */
 var convertStringToAsonKeyString = function(str) {
-    return escapeToJson(str).replace(/ /g,"\\ ");
+    //if string could be interpreted as a key for an empty sequence or map, add a backslash to avoid that
+    var matchResult = str.match(/^(\\*)([\.-].*)/);
+    var backslashesInFront = "";
+    if(matchResult !== null) {
+        backslashesInFront = "\\" + matchResult[1];
+        str = matchResult[2];
+    }
+    return backslashesInFront + escapeToJson(str).replace(/ /g,"\\ ");
 };
 
 /**
@@ -255,22 +252,6 @@ var convertAsonValueToObjectValue = function(str) {
     }
     return unescapeFromJson(str);
 }
-
-/**
-Converts an ASON key for empty maps or sequences into an object value.
-*/
-var convertAsonEmptyKeyToObjectValue = function(str) {
-    var matchResult = str.match(/^(\\*)(.*)/);
-    if(matchResult !== null) {
-        var backslashes = matchResult[1];
-        var str = matchResult[2];
-        if(backslashes.length !== 0) {
-            return backslashes.slice(1) + unescapeFromJson(str);
-        } else {
-            return unescapeFromJson(str.slice(1));
-        }
-    }
-};
 
 /**
 Converts an object value to a string that represents
@@ -429,31 +410,41 @@ var asonTokenizer = function (shiftTokens, strict) {
                     }
                     i += 1;
                 } else {
-                    if(mapKeyEmptySequenceRegEx.test(content)){
+                    if(content[0] === '.'){
+                        key = content.substr(1);
                         tokens.push({
                             type: 'ske',
-                            body: convertAsonEmptyKeyToObjectValue(content)
+                            body: unescapeFromJson(key)
                         })
-                    } else if(mapKeyEmptyMapRegEx.test(content)) {
+                    } else if(content[0] === '-') {
+                        key = content.substr(1);
                         tokens.push({
                             type: 'mke',
-                            body: convertAsonEmptyKeyToObjectValue(content)
+                            body: unescapeFromJson(key)
                         })
                     } else {
+                        //handle escaping of - and .
+                        var matchResult = content.match(/^(\\*)[\.-](.*)/);
+                        var backslashesInFront = "";
+                        if(matchResult !== null) {
+                            var backslashes = matchResult[1];
+                            //remove one backslash, backslashes will be added separately, so remove them from content
+                            backslashesInFront = backslashes.substr(1);
+                            content = content.substr(backslashes.length);
+                        }
+                       
                         //ignore escaped spaces
                         firstSpacePosition = indexOfFirstUnescapedSpace(content);
                         if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
+                        //if in non strict mode, the whole content is the key if there is no space
+                        if(firstSpacePosition === -1) firstSpacePosition = content.length;
                         key = content.substring(0, firstSpacePosition);
-                        value = content.substr(firstSpacePosition + 1);
-                        if(key === "") {
-                            key = value;
-                            value = "";
-                        }
+                        value = content.substring(firstSpacePosition + 1);
                         if(strict && key === "") throw "value key must not be empty";
                         if(strict && value === "") throw "value must not be empty";
                         tokens.push({
                             type: 'k',
-                            body: convertAsonKeyToObjectValue(key)
+                            body: backslashesInFront + convertAsonKeyToObjectValue(key)
                         });
                         tokens.push({
                             type: 'v',
@@ -638,29 +629,40 @@ var generateJSON = function (asonTokens,prettyPrint) {
 //--------------------------------TOKENS TO JSON END
 
 
-
+var hasKeys = function(o) {
+    for(var key in o) {
+        if(o.hasOwnProperty(key)) {
+            return true;
+        }
+    }
+    return false;
+}
 //-----------------------------JS Object to ASON
 var objToAson = function(o, level) {
     var output = "";
-    var hasKeys = false;
     for(var key in o) {
         if(o.hasOwnProperty(key)){
-            hasKeys = true;
             output += levelToSpace(level);
 
             var value = o[key];
             if(Array.isArray(value)) {
-                output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);
+                if(value.length === 0) {
+                    output += "." + escapeToJson(key);
+                } else {
+                    output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);                    
+                }
             } else if(value === Object(value)) { //warn: array is also an object
-                output += escapeToJson(key) + "\n" + objToAson(value, level + 1);
+                if(!hasKeys(value)){
+                    output += "-" + escapeToJson(key);
+                } else {
+                    output += escapeToJson(key) + "\n" + objToAson(value, level + 1);
+                }
             } else {
                 //Use escaping. Turn spaces in keys into \<space>
                 output += convertStringToAsonKeyString(key) + " " + convertObjectValueToAsonValueString(value) + "\n";
             }
         }
     }
-    // if(!hasKeys) output
-    //if(output[output.length-1] === "\n") output = output.slice(0,output.length-1);
     return output;
 };
 

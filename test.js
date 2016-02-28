@@ -35,8 +35,18 @@ testData = [
     ['interpret as primitive if possible. escape sequence if string needed.','-\n a true\n b false\n c null\n d 5\n e \\true\n f \\false\n g \\null\n h undefined','{"a":true,"b":false,"c":null,"d":5,"e":"true","f":"false","g":"null","h":"undefined"}'],
     ['sample','-\n glossary\n  title example glossary\n  GlossDiv\n   title S\n   GlossList\n    GlossEntry\n     ID SGML\n     SortAs SGML\n     GlossTerm Standard Generalized Markup Language\n     Acronym SGML\n     Abbrev ISO 8879:1986\n     GlossDef\n      para A meta-markup language, used to create markup languages such as DocBook.\n      .GlossSeeAlso\n       GML\n       XML\n     GlossSee markup','{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}'],
     ['backslash as value','-\n backslash \\\\','{"backslash":"\\\\"}'],
+    ['key for empty sequence','-\n .key','{"key":[]}'],
+    ['key for empty sequence with space','-\n .key split','{"key split":[]}'],
+    ['key for empty sequence with space and dot','-\n ..key split','{".key split":[]}'],
+    ['escaped key for empty sequence with space and dot','-\n \\..key split','{"..key":"split"}'],
+    ['double escaped key for empty sequence with space and dot','-\n \\\\..key split','{"\\\\..key":"split"}'], // \\\\ in ASON string are two backslashes and \\\\ in JSON is actually one backslash
+    ['key for empty map','-\n -key','{"key":{}}'],
+    ['key for empty map with space','-\n -key split','{"key split":{}}'],
+    ['key for empty map with space and hyphen','-\n --key split','{"-key split":{}}'],
+    ['escaped key for empty map with space and hyphen','-\n \\--key split','{"--key":"split"}'],
+    ['double escaped key for empty map with space and hyphen','-\n \\\\--key split','{"\\\\--key":"split"}'],
 
-
+    
 ];
 
 var firstArg = process.argv[2];
