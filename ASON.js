@@ -64,11 +64,11 @@ var convertPrimitiveToString = function(value) {
 /**
 Converts a string from json. The chars of the resulting string are not escaped
 */
-var unescapeFromJson = function(text) {
+var unescapeFromJson = function(text,ason) {
     //map escape sequence to char
     var specialMapping = {
         "\\\"":"\"",
-        "\\\\":"\\",
+        // "\\\\":"\\",
         "\\/":"/",
         "\\b":"\b",
         "\\f":"\f",
@@ -77,6 +77,10 @@ var unescapeFromJson = function(text) {
         "\\t":"\t",
     };
 
+    if(ason) {
+        specialMapping["\\/"] = undefined;
+    }
+    
     //output
     var unescapedString = "";
     
@@ -134,7 +138,7 @@ var unescapeFromJson = function(text) {
 /**
 Converts a normal string. The chars of the resulting string are json compliant escaped
 */
-var escapeToJson = function(text, ignoreQuotationMark) {
+var escapeToJson = function(text, ason) {
     var escapedString = "";
     
     //map char to escape sequence
@@ -149,8 +153,9 @@ var escapeToJson = function(text, ignoreQuotationMark) {
         "\t":"\\t",
     };
     
-    if(ignoreQuotationMark) {
+    if(ason) {
         specialMapping["\""] = undefined;
+        specialMapping["\\"] = undefined;
     }
     
     var index = -1;
@@ -225,7 +230,7 @@ string. All chars will be unescaped.
 For Ason values only the unescapeFromJson method is needed.
 */
 var convertAsonKeyToObjectValue = function(asonKey) {
-    return unescapeFromJson(asonKey.replace(/\\ /g," "));
+    return unescapeFromJson(asonKey.replace(/\\ /g," "),true);
 };
 
 /**
@@ -250,7 +255,7 @@ var convertAsonValueToObjectValue = function(str) {
             return backslashes.slice(1) + str;
         }
     }
-    return unescapeFromJson(str);
+    return unescapeFromJson(str,true);
 }
 
 /**
@@ -398,13 +403,13 @@ var asonTokenizer = function (shiftTokens, strict) {
                         key = content.substr(1);
                         tokens.push({
                             type: 'sk',
-                            body: unescapeFromJson(key)
+                            body: unescapeFromJson(key,true)
                         });
                         contexts.push('s');
                     } else {
                         tokens.push({
                             type: 'mk',
-                            body: unescapeFromJson(content)
+                            body: unescapeFromJson(content,true)
                         });
                         contexts.push('m');
                     }
@@ -414,13 +419,13 @@ var asonTokenizer = function (shiftTokens, strict) {
                         key = content.substr(1);
                         tokens.push({
                             type: 'ske',
-                            body: unescapeFromJson(key)
+                            body: unescapeFromJson(key,true)
                         })
                     } else if(content[0] === '-') {
                         key = content.substr(1);
                         tokens.push({
                             type: 'mke',
-                            body: unescapeFromJson(key)
+                            body: unescapeFromJson(key,true)
                         })
                     } else {
                         //handle escaping of - and .

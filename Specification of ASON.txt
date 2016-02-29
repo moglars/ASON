@@ -4,7 +4,7 @@ The Aesthetically Pleasant Object Notation (ASON) is a text format that facilita
 
 As JSON, ASON has a notation for maps and sequences. They are introduced by hyphens and dots. A line break and an additional space in front of the next line (indentation) introduces a new nested element. The indentation is a visual representation of the hierarchy of the structured data. It was decided to not allow tabs or more than one space for indentation to avoid the need for conventions.
 
-ASON was created with JSON in mind. Because ASON only adds an additional layer between JSON and the human, it has to be fully compatible with JSON. ASON can be easily written and read by humans. In the beginning, it is expected that ASON data will be converted into JSON before it is further processed or transported by machines, because JSON is widely used at this time.
+ASON was created with JSON in mind. Because ASON only adds an additional layer between JSON and the human, it has to be fully compatible with JSON. ASON can be easily written and read by humans. It is expected that ASON data will be converted into JSON or an other more efficient format before it is further processed or transported by machines, because ASON is primarily designed for humans.
 
 The idea for simpler notations (also for XML, CSS or JavaScript) was already there some years ago. The first implementation of ASON was created at the beginning of 2016, 15 years after JSON was first presented to the world.
 
@@ -28,7 +28,7 @@ sequence - introduces a new sequence context
 empty map
 empty sequence
 
-The starting context is a sequence. In JSON, the context is explicitly set with braces, brackets or none of them. To get a map in the root context, the following rule is applied: If the root sequence contains only one map or value, it is interpreted as a map or value that is not in a sequence.
+The starting context is a sequence. In JSON, the context is explicitly set with braces, brackets or none of them. To get a map in the root context, the following rule is applied: If the root sequence contains only one map, sequence or value, it is interpreted as a map, sequence or value that is not in a sequence.
 
 In JSON, there are special value types beside string, namely numbers, true, false or null. If an ASON value token contains a number as defined by JSON, it is interpreted as such. Same for true, false or null. To interpret these as strings, use a backslash character in front.
 
@@ -40,7 +40,7 @@ true -> is interpreted as primitive value true
 etc.
 
 #Tokenization
-The ASON text is splitted into lines by line feed. Spaces in front of the line are consumed and depict the level of the line. If the level of the line is lower than one  before, a left shit token is created. The body contains the number of levels to decrease. The line without the spaces in front will be called "content". Depending on the context, create tokens:
+The ASON text is splitted into lines by line feed. Spaces in front of the line are consumed and depict the level of the line. If the level of the line is lower than one before, a left shift token is created. The body contains the number of levels to decrease. The line without the spaces in front will be called "content". Depending on the context, create tokens:
 
 Sequence context:
 if the content starts with a dot and the next line is indented, create a token of type sequence.
