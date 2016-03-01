@@ -54,21 +54,36 @@ if the content starts with a dot and the next line is indented, create a token o
 else if the next line is indented, create a token of type map key.
 else if the content starts with a dot, create a token of type key for empty sequence. The body contains the content without the dot at the beginning.
 else if the content starts with a hyphen, create a token of type key for empty map. The body contains the content without the hyphen at the beginning.
-else split content at first space. Create a key token that contains the first part in the body and a value token that contains the second part.
+else split content at first unescaped space. Create a key token that contains the first part in the body and a value token that contains the second part.
 
 If a space is escaped with a backslash, the split is made at the next space etc.
 
 #Escaping
-As described in the specification for JSON, the control characters U+0000 to U+001F must be escaped. It is not needed to espace quotation mark U+0022 , backslash U+005C or solidus U +002F anymore. They do not have a two-character escape sequence anymore.
-If a key for an empty map or sequence should be interpreted as a key value pair, the first character must be escaped with a backslash.
+ASON tries to make escaping only necessary in very rare occasions, because escaping needs an effort (typing in more characters, keeping in mind the special meanings). ASON assumes that invisible characters (U+0000 to U+001F) are only rarely used and doesn't provide any two-character escape sequences for them (differently from JSON). The standard escaping character is \ (called backslash or reverse solidus character) and refers to the Unicode code point U+005C. It is only consumed if it forms a valid escape sequence, otherwise it is displayed as is (in JSON it must be escaped itself). E.g. if the \ forms a valid escape sequence, all additional \ characters in front of the escape sequence are not consumed.
+
+For convenience, the \uXXXX escape sequence is taken over from the JSON specification. It allows to specify a code point in four hexadecimal characters.
+
+For convenience, the only two-character escaping sequence left is \n to represent a line break (more precisely a line feed character).
+
+In ASON, escaping is not primarily used for characters, but to specify that not the default behaviour should be applied:
+
+1. key for an empty map or sequence should be interpreted as a key value pair
+
+2. space character should be ignored for splitting a string into key and value
+
+3. a primitive value like a number, true, false or null should be interpreted as a string
 
 E.g.:
-.a 5 -> key a 5 with empty sequence as value
-\.a 5 -> key .a with value 5
-\\.a 5 -> key \.a with value 5
---a 5 -> key -a 5 with empty map as value
+.a 5 -> key "a 5" with empty sequence as value
+\.a 5 -> key ".a" with value 5
+\\.a 5 -> key "\.a" with value 5
+--a 5 -> key "-a 5" with empty map as value
+\.this\ is\ a\ key and this a value -> key ".this is a key" with value "and this a value"
+key \5 -> key "key" with value "5" (a string, not a number)
 
 Please note that it doesn't make much sense to define an empty map or sequence. It was just added to preserve compatibility with JSON.
+
+ASON encourages the user to write spaceless keys because spaces have to be escaped for keys. Most JSON data has space-less keys in it. The author also recommends to use camelCase for keys.
 
 #Strict
 

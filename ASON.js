@@ -65,20 +65,23 @@ var convertPrimitiveToString = function(value) {
 Converts a string from json. The chars of the resulting string are not escaped
 */
 var unescapeFromJson = function(text,ason) {
-    //map escape sequence to char
-    var specialMapping = {
-        "\\\"":"\"",
-        // "\\\\":"\\",
-        "\\/":"/",
-        "\\b":"\b",
-        "\\f":"\f",
-        "\\n":"\n",
-        "\\r":"\r",
-        "\\t":"\t",
-    };
-
+    var specialMapping;
     if(ason) {
-        specialMapping["\\/"] = undefined;
+        specialMapping = {
+            "\\n":"\n"
+        };        
+    } else {
+        //map escape sequence to char
+        specialMapping = {
+            "\\\"":"\"",
+            "\\\\":"\\",
+            "\\/":"/",
+            "\\b":"\b",
+            "\\f":"\f",
+            "\\n":"\n",
+            "\\r":"\r",
+            "\\t":"\t",
+        };        
     }
     
     //output
@@ -119,13 +122,15 @@ var unescapeFromJson = function(text,ason) {
                 unescapedString+=String.fromCharCode(parseInt(codePoint, 16));
                  escapeSequenceIndex+=6;
             } else {
-                //otherwise, just ignore the backslash
-                // escapeSequenceIndex+=1;
-                
-                //!Non-standard: as long as unescaping is only done for ason text, a backslash that
-                //doesn't escape a specific char should not be ignored. Instead, it is printed:
-                unescapedString += "\\";
-                escapeSequenceIndex+=1;
+                if(ason) {
+                    //!Non-standard: as long as unescaping is only done for ason text, a backslash that
+                    //doesn't escape a specific char should not be ignored. Instead, it is printed:
+                    unescapedString += "\\";
+                    escapeSequenceIndex+=1;
+                } else {
+                    //otherwise, just ignore the backslash
+                    escapeSequenceIndex+=1;
+                }
             }
         }
     }
@@ -140,22 +145,23 @@ Converts a normal string. The chars of the resulting string are json compliant e
 */
 var escapeToJson = function(text, ason) {
     var escapedString = "";
-    
-    //map char to escape sequence
-    var specialMapping = {
-        "\"":"\\\"",
-        "\\":"\\\\",
-        // "/":"\\/",
-        "\b":"\\b",
-        "\f":"\\f",
-        "\n":"\\n",
-        "\r":"\\r",
-        "\t":"\\t",
-    };
-    
+    var specialMapping;
     if(ason) {
-        specialMapping["\""] = undefined;
-        specialMapping["\\"] = undefined;
+        specialMapping = {
+            "\n":"\\n",
+        };
+    } else {
+        //map char to escape sequence
+        specialMapping = {
+            "\"":"\\\"",
+            "\\":"\\\\",
+            // "/":"\\/", //is optional in JSON specification
+            "\b":"\\b",
+            "\f":"\\f",
+            "\n":"\\n",
+            "\r":"\\r",
+            "\t":"\\t",
+        };
     }
     
     var index = -1;
