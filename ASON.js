@@ -397,7 +397,7 @@
                 if (strict && content.indexOf("\t") !== -1) {
                     throw "no tabs allowed";
                 }
-                //TODO throw exception if ason tokens contain unescaped special characters: 005C, 0000-001F must be escaped.
+                //TODO throw exception if ason tokens contain unescaped special characters: 0000-001F must be escaped.
                 if (context === 'm') {
                     lookAheadToken = shiftTokens[i + 1];
                     if (lookAheadToken !== undefined && lookAheadToken.type === 'rs') {
