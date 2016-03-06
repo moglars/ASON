@@ -890,7 +890,7 @@
         process.stdout.write(str);
     };
 
-    if (require && require.main === module) {
+    if (typeof require === 'object' && require.main === module) {
         var paramIndex = 2;
         var options = process.argv[paramIndex];
         if (options !== undefined && options.substring(0, 1) === "-") {
