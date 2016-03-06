@@ -50,12 +50,12 @@ var convertPrimitiveToString = function(value) {
     }
     //JSON.stringify interprets INFINITY and NaN as null. if value of key is undefined, the key is ignored.
     //TODO also ignore key if value is undefined (has to be checked elsewhere)
-    
+
     //Convert primitives to string
     if(value === null || value === true || value === false || typeof value === "number") {
         return "" + value;
     }
-    
+
     return null;
 };
 //-------------------------------COMMON END
@@ -69,7 +69,7 @@ var unescapeFromJson = function(text,ason) {
     if(ason) {
         specialMapping = {
             "\\n":"\n"
-        };        
+        };
     } else {
         //map escape sequence to char
         specialMapping = {
@@ -81,32 +81,32 @@ var unescapeFromJson = function(text,ason) {
             "\\n":"\n",
             "\\r":"\r",
             "\\t":"\t",
-        };        
+        };
     }
-    
+
     //output
     var unescapedString = "";
-    
+
     //search index
     var escapeSequenceIndex = -1;
-    
+
     while(true) {
         //find escape sequence
         var newIndex = text.indexOf("\\", escapeSequenceIndex);
-        
+
         //no action if no escape sequence found
         if(newIndex == -1) break;
-        
+
         //add text from previous index to new index (exclusive) to unescapedString
         unescapedString+=text.substring(escapeSequenceIndex,newIndex);
-        
+
         //work now with new index
         escapeSequenceIndex = newIndex;
-        
+
         //get char from mapping if possible
         var escapeSequence = text.substr(escapeSequenceIndex,2);
         var specialChar = specialMapping[escapeSequence];
-        
+
         //if char is from mapping
         if(specialChar !== undefined) {
             //Add it to unescapedString
@@ -134,7 +134,7 @@ var unescapeFromJson = function(text,ason) {
             }
         }
     }
-    
+
     //add the rest to unescapedString
     unescapedString+=text.substring(escapeSequenceIndex);
     return unescapedString;
@@ -163,9 +163,9 @@ var escapeToJson = function(text, ason) {
             "\t":"\\t",
         };
     }
-    
+
     var index = -1;
-    
+
     for(var i = 0;i<text.length;i++) {
         if(specialMapping[text[i]] !== undefined) {
             escapedString+=specialMapping[text[i]];
@@ -177,7 +177,7 @@ var escapeToJson = function(text, ason) {
             escapedString+=text[i];
         }
     }
-    
+
     return escapedString;
 }
 
@@ -213,7 +213,7 @@ var convertStringToJsonValueFormat = function(str) {
     if(matchResult !== null) {
         var backslashes = matchResult[1];
         var str = matchResult[2];
-        
+
         if(backslashes.length === 0) {
             //its a primitive. no " chars
             return str;
@@ -230,7 +230,7 @@ var convertJsonValueFormatToObjectValue = function(str) {
 };
 
 /**
-Unescapes the spaces in a ason key and applies 
+Unescapes the spaces in a ason key and applies
 then json unescaping rules. Result will be a normal
 string. All chars will be unescaped.
 For Ason values only the unescapeFromJson method is needed.
@@ -249,9 +249,9 @@ var convertAsonValueToObjectValue = function(str) {
     if(matchResult !== null) {
         var backslashes = matchResult[1];
         var str = matchResult[2];
-        
+
         if(backslashes.length === 0) {
-            //its a primitive. 
+            //its a primitive.
             if(str === "null") return null;
             else if(str === "true") return true;
             else if(str === "false") return false;
@@ -266,7 +266,7 @@ var convertAsonValueToObjectValue = function(str) {
 
 /**
 Converts an object value to a string that represents
-a Json value. In Json, strings have surrounding " chars 
+a Json value. In Json, strings have surrounding " chars
 while primitives do not. For keys, the escapeToJson method
 with manually adding " chars can be used.
 */
@@ -274,13 +274,13 @@ var convertObjectValueToJsonValueFormat = function(value) {
     //Convert primitives to string
     var str = convertPrimitiveToString(value);
     if(str !== null) return str;
-    
+
     //otherwise, escape and surround with " chars
     return '"' + escapeToJson(value) + '"';
 }
 
 /**
-Converts a value (either string, true, false, number or null) 
+Converts a value (either string, true, false, number or null)
 from an object to an ason value string.
 Applies json escaping when value is of type string, but does not escape quotation mark.
 If not a string, converts value into string representation.
@@ -289,14 +289,14 @@ var convertObjectValueToAsonValueString = function(value) {
     //Convert primitives to string
     var str = convertPrimitiveToString(value);
     if(str !== null) return str;
-    
+
     //escaping needed for string representation of primitive types
     var matchResult = value.match(primitiveEscapeSequenceRegEx);
     if(matchResult !== null) {
         //just add a backslash in front
         return "\\" + matchResult[0];
     }
-    
+
     return escapeToJson(value, true);
 };
 //-------------------------------ESCAPING END
@@ -443,7 +443,7 @@ var asonTokenizer = function (shiftTokens, strict) {
                             backslashesInFront = backslashes.substr(1);
                             content = content.substr(backslashes.length);
                         }
-                       
+
                         //ignore escaped spaces
                         firstSpacePosition = indexOfFirstUnescapedSpace(content);
                         if(strict && firstSpacePosition === -1) throw "expected key and value separated by unescaped space or indentation on next line";
@@ -660,7 +660,7 @@ var objToAson = function(o, level) {
                 if(value.length === 0) {
                     output += "." + escapeToJson(key);
                 } else {
-                    output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);                    
+                    output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);
                 }
             } else if(value === Object(value)) { //warn: array is also an object
                 if(!hasKeys(value)){
@@ -724,7 +724,7 @@ var asonToJson = function (ason,prettyPrint,strict) {
 
 var jsonToAson = function(json) {
     //TODO direct conversion json ason?
-    
+
     var o = JSON.parse(json);
     return stringify(o);
 };
@@ -793,13 +793,13 @@ exports.convertObjectValueToJsonValueFormat = convertObjectValueToJsonValueForma
 
 //-----------------------------CONSOLE INTERFACE
 var printHelp = function() {
-    var str = 
+    var str =
 `Usage
-node ASON.js [-(a|j[p][s])] [sourceFile [destinationFile]] 
+node ASON.js [-(a|j[p][s])] [sourceFile [destinationFile]]
 
 Converts json to ason and vice versa.
 
-Options: 
+Options:
 a convert json to ason
 j convert ason to json
 p apply pretty print to resulting json
@@ -822,17 +822,17 @@ if(require && require.main === module) {
     } else {
         options = "-a";
     }
-    
+
     options = options.substring(1);
-    
+
     var fnToCall;
     var destType;
-    
+
     //TODO print line number when conversion failed
     if(options === "a") {
         fnToCall = jsonToAson;
         destType = "ason";
-        
+
     } else if(options === "j"){
          fnToCall = asonToJson;
          destType = "json";
@@ -850,19 +850,19 @@ if(require && require.main === module) {
         printHelp();
         process.exit(13);
     } //TODO validate option v. convert windows line breaks option w.
-    
+
     var sourceFile = process.argv[paramIndex];
     if(sourceFile === "" || sourceFile === undefined) {
         process.stdin.setEncoding('utf8');
 
         var input = "";
-        
+
         process.stdin.on('readable', () => {
-            
+
             var chunk = process.stdin.read();
-            
+
             if (chunk !== null) {
-                
+
                 //TODO data could be read as a stream and continually converted to ason/json
                 input += chunk;
             }
@@ -871,27 +871,27 @@ if(require && require.main === module) {
         process.stdin.on('end', () => {
             try {
                 var strForStdOut = fnToCall(input);
-                process.stdout.write(strForStdOut); 
+                process.stdout.write(strForStdOut);
             } catch (e) {
                 process.stdout.write("Conversion failed " + e);
                 process.exit(14);
             }
-        }); 
+        });
     } else {
         var destinationFile = process.argv[4];
-        
+
         if(destinationFile === "" || destinationFile === undefined) {
             var fs = require('fs');
-            
+
             fs.readFile(sourceFile, (err, data) => {
                 try {
                     if (err) throw err;
-                    var result = fnToCall(data.toString()); 
+                    var result = fnToCall(data.toString());
                 } catch (e) {
                     process.stdout.write("Conversion failed " + e);
                     process.exit(14);
                 }
-                
+
                 var newFile = sourceFile + "." + destType;
                 fs.writeFile(newFile, result, (err) => {
                     if (err) throw err;
@@ -901,11 +901,11 @@ if(require && require.main === module) {
             });
         } else {
             var fs = require('fs');
-            
+
             fs.readFile(sourceFile, (err, data) => {
                 try {
                     if (err) throw err;
-                    var result = fnToCall(data.toString());                     
+                    var result = fnToCall(data.toString());
                 } catch (e) {
                     process.stdout.write("Conversion failed " + e);
                     process.exit(14);
@@ -915,10 +915,10 @@ if(require && require.main === module) {
                     process.stdout.write("Created file at " + destinationFile);
                     process.exit(0);
                 });
-            });            
+            });
         }
     }
-   
+
 }
 
 
