@@ -724,6 +724,7 @@ var asonToJson = function (ason,prettyPrint,strict) {
 
 var jsonToAson = function(json) {
     //TODO direct conversion json ason?
+    
     var o = JSON.parse(json);
     return stringify(o);
 };
@@ -789,3 +790,136 @@ exports.parse = parse;
 exports.unescapeFromJson = unescapeFromJson;
 exports.convertAsonValueToObjectValue = convertAsonValueToObjectValue;
 exports.convertObjectValueToJsonValueFormat = convertObjectValueToJsonValueFormat;
+
+//-----------------------------CONSOLE INTERFACE
+var printHelp = function() {
+    var str = 
+`Usage
+node ASON.js [-(a|j[p][s])] [sourceFile [destinationFile]] 
+
+Converts json to ason and vice versa.
+
+Options: 
+a convert json to ason
+j convert ason to json
+p apply pretty print to resulting json
+s strict mode. Conversion from ason to json is aborted when a rule is violated.
+
+When sourceFile is not specified, convert stdin. The result is outputed on stdout.
+When no option is given, option a is implied.
+
+e.g.:
+echo true | node Ason.js -j
+echo {"a":5} | node Ason.js -a`;
+    process.stdout.write(str);
+};
+
+if(require && require.main === module) {
+    var paramIndex = 2;
+    var options = process.argv[paramIndex];
+    if(options !== undefined && options.substring(0,1) === "-") {
+        paramIndex++;
+    } else {
+        options = "-a";
+    }
+    
+    options = options.substring(1);
+    
+    var fnToCall;
+    var destType;
+    
+    //TODO print line number when conversion failed
+    if(options === "a") {
+        fnToCall = jsonToAson;
+        destType = "ason";
+        
+    } else if(options === "j"){
+         fnToCall = asonToJson;
+         destType = "json";
+    } else if(options === "js"){
+         fnToCall = function(input){return asonToJson(input,false,true)};
+         destType = "json";
+    } else if(options === "jp"){
+        fnToCall = function(input){return asonToJson(input,true,false)};
+        destType = "json";
+    } else if(options === "jps"){
+        fnToCall = function(input){return asonToJson(input,true,true)};
+        destType = "json";
+    } else {
+        process.stdout.write("options not valid\n");
+        printHelp();
+        process.exit(13);
+    } //TODO validate option v. convert windows line breaks option w.
+    
+    var sourceFile = process.argv[paramIndex];
+    if(sourceFile === "" || sourceFile === undefined) {
+        process.stdin.setEncoding('utf8');
+
+        var input = "";
+        
+        process.stdin.on('readable', () => {
+            
+            var chunk = process.stdin.read();
+            
+            if (chunk !== null) {
+                
+                //TODO data could be read as a stream and continually converted to ason/json
+                input += chunk;
+            }
+        });
+
+        process.stdin.on('end', () => {
+            try {
+                var strForStdOut = fnToCall(input);
+                process.stdout.write(strForStdOut); 
+            } catch (e) {
+                process.stdout.write("Conversion failed " + e);
+                process.exit(14);
+            }
+        }); 
+    } else {
+        var destinationFile = process.argv[4];
+        
+        if(destinationFile === "" || destinationFile === undefined) {
+            var fs = require('fs');
+            
+            fs.readFile(sourceFile, (err, data) => {
+                try {
+                    if (err) throw err;
+                    var result = fnToCall(data.toString()); 
+                } catch (e) {
+                    process.stdout.write("Conversion failed " + e);
+                    process.exit(14);
+                }
+                
+                var newFile = sourceFile + "." + destType;
+                fs.writeFile(newFile, result, (err) => {
+                    if (err) throw err;
+                    process.stdout.write("Created file at " + newFile);
+                    process.exit(0);
+                });
+            });
+        } else {
+            var fs = require('fs');
+            
+            fs.readFile(sourceFile, (err, data) => {
+                try {
+                    if (err) throw err;
+                    var result = fnToCall(data.toString());                     
+                } catch (e) {
+                    process.stdout.write("Conversion failed " + e);
+                    process.exit(14);
+                }
+                fs.writeFile(destinationFile, result, (err) => {
+                    if (err) throw err;
+                    process.stdout.write("Created file at " + destinationFile);
+                    process.exit(0);
+                });
+            });            
+        }
+    }
+   
+}
+
+
+//--------------------------------CONSOLE INTERFACE END
