@@ -67,7 +67,7 @@ The ASON text is split into lines by line feed. Spaces in front of the line are 
 
 ## Escaping
 
-ASON tries to make escaping only necessary in very rare occasions, because escaping needs an effort (typing in more characters, keeping in mind the special meanings). ASON assumes that invisible characters (U+0000 to U+001F) are only rarely used and doesn't provide any two-character escape sequences for them (differently from JSON). The standard escaping character is \ (called backslash or reverse solidus character) and refers to the Unicode code point U+005C. It is only consumed if it forms a valid escape sequence, otherwise it is displayed as is (in JSON it must be escaped itself). E.g. if the \ forms a valid escape sequence, all additional \ characters in front of the escape sequence are not consumed.
+ASON tries to make escaping only necessary in very rare occasions, because escaping needs an effort (typing in more characters, keeping in mind the special meanings). ASON assumes that invisible characters (U+0000 to U+001F) are only rarely used and doesn't provide any two-character escape sequences for them (differently from JSON). The invisible characters U+0000 - U+001F must be escaped. The standard escaping character is \ (called backslash or reverse solidus character) and refers to the Unicode code point U+005C. It is only consumed if it forms a valid escape sequence, otherwise it is displayed as is (in JSON it must be escaped itself). E.g. if the \ forms a valid escape sequence, all additional \ characters in front of the escape sequence are not consumed.
 
 For convenience, the \uXXXX escape sequence is taken over from the JSON specification. It allows to specify a code point in four hexadecimal characters.
 
