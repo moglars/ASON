@@ -1,0 +1,2 @@
+Aesthetically Pleasant Object Notation by [Marc Brünisholz](https://github.com/moglars/ASON) is licensed under a [Creative Commons Attribution 4.0 International License](http://creativecommons.org/licenses/by/4.0/).
+Based on a work at [http://json.org/](http://json.org/).
