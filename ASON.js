@@ -712,6 +712,11 @@
     var isObject = function (o) {
         return o !== null && typeof o === 'object';
     };
+    
+    //http://stackoverflow.com/questions/10589732/checking-if-a-date-is-valid-in-javascript#10589791
+    var isDate = function(d) {
+        return d instanceof Date && !isNaN(d.valueOf());
+    };
 
     var arrayToAson;
     var objToAson;
@@ -728,6 +733,8 @@
                 } else {
                     output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);
                 }
+            } else if (isDate(value)) {
+                output += convertStringToAsonKeyString(key) + " " + value.toISOString() + "\n";
             } else if (isObject(value)) { //warn: array is also an object
                 if (!hasKeys(value)) {
                     output += "-" + escapeToJson(key) + "\n";
@@ -749,7 +756,9 @@
             output += levelToSpace(level);
             if (Array.isArray(el)) {
                 output += ".\n";
-                output += arrayToAson(el, level + 1);
+                output += arrayToAson(el, level + 1); 
+            } else if(isDate(el)) {
+                output += el.toISOString() + "\n";
             } else if (isObject(el)) {
                 output += "-\n";
                 output += objToAson(el, level + 1);
@@ -772,6 +781,8 @@
         var level = 0;
         if (Array.isArray(o)) {
             output += arrayToAson(o, level);
+        } else if(isDate(o)) {
+            output += o.toISOString();
         } else if (isObject(o)) {
             output += "-\n";
             output += objToAson(o, level + 1);
