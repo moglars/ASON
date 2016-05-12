@@ -724,26 +724,29 @@
     objToAson = function (o, level) {
         var output = "";
         Object.keys(o).forEach(function (key) {
-            output += levelToSpace(level);
-
             var value = o[key];
-            if (Array.isArray(value)) {
-                if (value.length === 0) {
-                    output += "." + escapeToJson(key) + "\n";
+            //ignore key if value is undefined
+            if(value !== undefined) {
+                output += levelToSpace(level);
+            
+                if (Array.isArray(value)) {
+                    if (value.length === 0) {
+                        output += "." + escapeToJson(key) + "\n";
+                    } else {
+                        output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);
+                    }
+                } else if (isDate(value)) {
+                    output += convertStringToAsonKeyString(key) + " " + value.toISOString() + "\n";
+                } else if (isObject(value)) { //warn: array is also an object
+                    if (!hasKeys(value)) {
+                        output += "-" + escapeToJson(key) + "\n";
+                    } else {
+                        output += escapeToJson(key) + "\n" + objToAson(value, level + 1);
+                    }
                 } else {
-                    output += "." + escapeToJson(key) + "\n" + arrayToAson(value, level + 1);
+                    //Use escaping. Turn spaces in keys into \<space>
+                    output += convertStringToAsonKeyString(key) + " " + convertObjectValueToAsonValueString(value) + "\n";
                 }
-            } else if (isDate(value)) {
-                output += convertStringToAsonKeyString(key) + " " + value.toISOString() + "\n";
-            } else if (isObject(value)) { //warn: array is also an object
-                if (!hasKeys(value)) {
-                    output += "-" + escapeToJson(key) + "\n";
-                } else {
-                    output += escapeToJson(key) + "\n" + objToAson(value, level + 1);
-                }
-            } else {
-                //Use escaping. Turn spaces in keys into \<space>
-                output += convertStringToAsonKeyString(key) + " " + convertObjectValueToAsonValueString(value) + "\n";
             }
         });
 
